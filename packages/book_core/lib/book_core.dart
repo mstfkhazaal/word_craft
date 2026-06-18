@@ -10,3 +10,4 @@ export 'src/services/book_project_creator.dart';
 export 'src/services/book_project_loader.dart';
 export 'src/services/book_project_validator.dart';
 export 'src/services/book_project_writer.dart';
+export 'src/services/markbook_container_service.dart';

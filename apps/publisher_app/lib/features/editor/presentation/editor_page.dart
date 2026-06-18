@@ -4,8 +4,8 @@ import 'package:book_core/book_core.dart';
 import 'package:book_exporters/book_exporters.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:path/path.dart' as p;
 import 'package:printing/printing.dart';
-
 class EditorPage extends StatefulWidget {
   const EditorPage({super.key});
 
@@ -18,6 +18,10 @@ class _EditorPageState extends State<EditorPage> {
 
   BookProject? project;
   BookChapter? selectedChapter;
+  String? openedMarkBookPath;
+  String? workingDirectoryPath;
+
+  final containerService = MarkBookContainerService();
 
   final creator = BookProjectCreator();
   final loader = BookProjectLoader();
@@ -29,8 +33,98 @@ class _EditorPageState extends State<EditorPage> {
     controller.dispose();
     super.dispose();
   }
+  Future<void> saveMarkBook() async {
+    final currentProject = project;
+    final currentMarkBookPath = openedMarkBookPath;
+    final currentWorkingDirectory = workingDirectoryPath;
+    final chapter = selectedChapter;
 
-  Future<void> createAndLoadSampleProject() async {
+    if (currentProject == null ||
+        currentMarkBookPath == null ||
+        currentWorkingDirectory == null ||
+        chapter == null) {
+      return;
+    }
+
+    await writer.saveChapter(
+      rootPath: currentProject.rootPath,
+      chapterPath: chapter.path,
+      markdown: controller.text,
+    );
+
+    await containerService.packDirectory(
+      sourceDirectoryPath: currentWorkingDirectory,
+      outputFilePath: currentMarkBookPath,
+    );
+
+    final reloadedProject = await loader.load(currentWorkingDirectory);
+
+    setState(() {
+      project = reloadedProject;
+      selectedChapter = reloadedProject.chapters.firstWhere(
+            (item) => item.path == chapter.path,
+      );
+    });
+  }
+  Future<void> openMarkBook({
+    required String markBookPath,
+    required String workspaceRootPath,
+  }) async {
+    final fileName = p.basenameWithoutExtension(markBookPath);
+    final workingRoot = p.join(workspaceRootPath, fileName);
+
+    await containerService.unpackToDirectory(
+      markBookFilePath: markBookPath,
+      destinationDirectoryPath: workingRoot,
+    );
+
+    final loadedProject = await loader.load(workingRoot);
+
+    setState(() {
+      openedMarkBookPath = markBookPath;
+      workingDirectoryPath = workingRoot;
+      project = loadedProject;
+      selectedChapter = loadedProject.chapters.first;
+      controller.text = loadedProject.chapters.first.markdown;
+    });
+  }
+
+  Future<void> createMarkBook({
+    required String parentDirectoryPath,
+    required String title,
+    required String author,
+  }) async {
+    final safeName = title
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+        .replaceAll(RegExp(r'^-|-$'), '');
+
+    final workingRoot = '$parentDirectoryPath/$safeName';
+    final markBookPath = '$parentDirectoryPath/$title.markbook';
+
+    await creator.create(
+      rootPath: workingRoot,
+      title: title,
+      author: author,
+    );
+
+    await containerService.packDirectory(
+      sourceDirectoryPath: workingRoot,
+      outputFilePath: markBookPath,
+    );
+
+    final loadedProject = await loader.load(workingRoot);
+
+    setState(() {
+      openedMarkBookPath = markBookPath;
+      workingDirectoryPath = workingRoot;
+      project = loadedProject;
+      selectedChapter = loadedProject.chapters.first;
+      controller.text = loadedProject.chapters.first.markdown;
+    });
+  }
+  Future<void> createAndLoadSampleProject(BuildContext context) async {
     final rootPath = '${Directory.current.path}/sample_book';
 
     await creator.create(
@@ -114,7 +208,7 @@ class _EditorPageState extends State<EditorPage> {
         title: const Text('Markdown Book Publisher'),
         actions: [
           TextButton(
-            onPressed: createAndLoadSampleProject,
+            onPressed: ()=>createAndLoadSampleProject(context),
             child: const Text('Create Sample'),
           ),
           TextButton(
