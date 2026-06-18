@@ -1,7 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_localized_locales/flutter_localized_locales.dart';
-import 'package:publisher_app/app/menu/menu.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:publisher_app/app/app_menu.dart';
 import 'package:publisher_app/core/di/injection.dart';
 import 'package:publisher_app/core/i18n/translations.g.dart';
 import 'package:publisher_app/core/router/app_router.dart';
@@ -22,89 +23,101 @@ class AppStart extends StatelessWidget {
           builder: (context, state) {
             final locale = TranslationProvider.of(context).flutterLocale;
 
-            return PlatformMenuBar(
-              menus: [
-                menuApp(),
-                menuFile(),
+            return MaterialApp.router(
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.light,
+              darkTheme: AppTheme.dark,
+              themeMode: state.themeMode,
+              locale: locale,
+              supportedLocales: AppLocaleUtils.supportedLocales,
+              localizationsDelegates: const [
+                ...GlobalMaterialLocalizations.delegates,
+                LocaleNamesLocalizationsDelegate(),
+              ],
+              routerConfig: _appRouter.config(),
+              builder: (context, child) {
+                final appChild = child ?? const SizedBox.shrink();
 
-                menuEdit(),
-                menuChapter(),
-                menuText(),
-                menuPreview(),
+                final responsiveChild = ResponsiveBreakpoints.builder(
+                  child: appChild,
+                  breakpoints: const [
+                    Breakpoint(
+                      start: AppBreakpoints.mobileMin,
+                      end: AppBreakpoints.tabletMin - 1,
+                      name: MOBILE,
+                    ),
+                    Breakpoint(
+                      start: AppBreakpoints.tabletMin,
+                      end: AppBreakpoints.desktopMin - 1,
+                      name: TABLET,
+                    ),
+                    Breakpoint(
+                      start: AppBreakpoints.desktopMin,
+                      end: AppBreakpoints.wideMin - 1,
+                      name: DESKTOP,
+                    ),
+                    Breakpoint(
+                      start: AppBreakpoints.wideMin,
+                      end: double.infinity,
+                      name: 'wideDesktop',
+                    ),
+                  ],
+                );
 
-                menuView(),
-                menuWindows(),
-                menuHelp(),],
-              child: MaterialApp.router(
-                debugShowCheckedModeBanner: false,
-                theme: AppTheme.light,
-                darkTheme: AppTheme.dark,
-                themeMode: state.themeMode,
-                locale: locale,
-                supportedLocales: AppLocaleUtils.supportedLocales,
-                localizationsDelegates: const [
-                  ...GlobalMaterialLocalizations.delegates,
-                  LocaleNamesLocalizationsDelegate(),
-                ],
-                builder: (context, child) {
-                  final appChild = child ?? const SizedBox.shrink();
+                final translations = _translationsForLocale(locale);
 
-                  final responsiveChild = ResponsiveBreakpoints.builder(
-                    child: appChild,
-                    breakpoints: const [
-                      Breakpoint(
-                        start: AppBreakpoints.mobileMin,
-                        end: AppBreakpoints.tabletMin - 1,
-                        name: MOBILE,
-                      ),
-                      Breakpoint(
-                        start: AppBreakpoints.tabletMin,
-                        end: AppBreakpoints.desktopMin - 1,
-                        name: TABLET,
-                      ),
-                      Breakpoint(
-                        start: AppBreakpoints.desktopMin,
-                        end: AppBreakpoints.wideMin - 1,
-                        name: DESKTOP,
-                      ),
-                      Breakpoint(
-                        start: AppBreakpoints.wideMin,
-                        end: double.infinity,
-                        name: 'wideDesktop',
-                      ),
-                    ],
-                  );
+                final body = state.isLoadingLanguage
+                    ? _LanguageLoadingView(translations: translations)
+                    : responsiveChild;
 
-                  if (state.isLoadingLanguage) {
-                    return Scaffold(
-                      body: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 280),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                context.t.language.wait,
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                              const SizedBox(height: 16),
-                              const LinearProgressIndicator(),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-
-                  return responsiveChild;
-                },
-                routerConfig: _appRouter.config(),
-              ),
+                return AppMenu(
+                  key: ValueKey(locale.languageCode),
+                  translations: translations,
+                  child: body,
+                );
+              },
             );
           },
         );
       },
+    );
+  }
+
+  Translations _translationsForLocale(Locale locale) {
+    return switch (locale.languageCode) {
+      'ar' => AppLocale.ar.buildSync(),
+      _ => AppLocale.en.buildSync(),
+    };
+  }
+}
+
+class _LanguageLoadingView extends StatelessWidget {
+  const _LanguageLoadingView({
+    required this.translations,
+  });
+
+  final Translations translations;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 280),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                translations.language.wait,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 16),
+              const LinearProgressIndicator(),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

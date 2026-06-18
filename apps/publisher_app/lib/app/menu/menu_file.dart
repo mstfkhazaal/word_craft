@@ -1,103 +1,164 @@
 import 'package:enhanced_platform_menu/enhanced_platform_menu_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:publisher_app/core/i18n/translations.g.dart';
 
-EnhancedPlatformMenu menuFile() {
+EnhancedPlatformMenu menuFile(Translations translations) {
+  final t = translations.menu.file;
   return EnhancedPlatformMenu.standard(
     identifier: StandardMenuIdentifier.file,
-    label: 'File',
+    label: t.label,
     removeDefaultItems: true,
     menus: [
       EnhancedPlatformMenuItemGroup(
         members: [
           EnhancedPlatformMenuItem(
-            label: 'New Book',
+            label: t.newBook,
             shortcut: const SingleActivator(LogicalKeyboardKey.keyN, meta: true),
-
             onSelected: () {},
           ),
-          EnhancedPlatformMenuItem(label: 'New Book Set...', onSelected: () {}),
+          EnhancedPlatformMenuItem(
+            label: t.newBookSet,
+            onSelected: () {},
+          ),
         ],
       ),
-
       EnhancedPlatformMenuItemGroup(
         members: [
           EnhancedPlatformMenuItem(
-            label: 'Open…',
+            label: t.open,
             shortcut: const SingleActivator(LogicalKeyboardKey.keyO, meta: true),
-          ),
-          PlatformMenu(
-            label: 'Open Recent',
-            menus: [EnhancedPlatformMenuItem(label: 'Clear Recents')],
-          ),
-          EnhancedPlatformMenuItem(label: 'Import Word File', onSelected: () {}),
-        ],
-      ),
-      EnhancedPlatformMenuItemGroup(
-        members: [
-          EnhancedPlatformMenuItem(
-            label: 'Close',
-            shortcut: const SingleActivator(LogicalKeyboardKey.keyW, meta: true),
-          ),
-          EnhancedPlatformMenuItem(
-            label: 'Save',
-            shortcut: const SingleActivator(LogicalKeyboardKey.keyS, meta: true),
-          ),
-          EnhancedPlatformMenuItem(
-            label: 'Duplicate',
-            shortcut: const SingleActivator(LogicalKeyboardKey.keyS, shift: true, meta: true),
-          ),
-          EnhancedPlatformMenuItem(label: 'Rename'),
-          EnhancedPlatformMenuItem(label: 'Move To'),
-          PlatformMenu(
-            label: 'Revert To',
-            menus: [EnhancedPlatformMenuItem(label: 'No Document')],
-          ),
-        ],
-      ),
-
-      EnhancedPlatformMenuItemGroup(
-        members: [
-          EnhancedPlatformMenu.custom(
-            label: 'Share',
-            menus: [EnhancedPlatformMenuItem(label: 'No Document')],
-          ),
-        ],
-      ),
-      EnhancedPlatformMenuItemGroup(
-        members: [
-          EnhancedPlatformMenuItem(label: 'Reimport Word File...'),
-          PlatformMenu(
-            label: 'Reuse Elements From',
-            menus: [EnhancedPlatformMenuItem(label: 'Others..')],
-          ),
-          EnhancedPlatformMenuItem(label: 'Reuse Summary...'),
-        ],
-      ),
-      
-      EnhancedPlatformMenuItemGroup(
-        members: [
-          EnhancedPlatformMenuItem(
-            label: 'Generate Books...',
-            shortcut: const SingleActivator(LogicalKeyboardKey.keyB, shift: true, meta: true),
-
             onSelected: () {},
           ),
-          PlatformMenu(
-            label: 'Export Content As',
+          EnhancedPlatformMenu.custom(
+            label: t.openRecent,
             menus: [
-              EnhancedPlatformMenuItem(label: 'Word File...'),
-              EnhancedPlatformMenuItem(label: 'Rich Text Format ...'),
+              EnhancedPlatformMenuItem(
+                label: t.clearRecents,
+                onSelected: () {},
+              ),
+            ],
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.importWordFile,
+            onSelected: () {},
+          ),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.close,
+            shortcut: const SingleActivator(LogicalKeyboardKey.keyW, meta: true),
+            onSelected: (){},
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.save,
+            shortcut: const SingleActivator(LogicalKeyboardKey.keyS, meta: true),
+            onSelected: (){},
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.duplicate,
+            shortcut: const SingleActivator(
+              LogicalKeyboardKey.keyS,
+              shift: true,
+              meta: true,
+            ),
+            onSelected: (){},
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.rename,
+            onSelected: (){},
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.moveTo,
+            onSelected: (){},
+          ),
+          EnhancedPlatformMenu.custom(
+            label: t.revertTo,
+            menus: [
+              EnhancedPlatformMenuItem(
+                label: t.noDocument,
+                onSelected: (){},
+              ),
             ],
           ),
         ],
       ),
       EnhancedPlatformMenuItemGroup(
         members: [
-          EnhancedPlatformMenuItem(label: 'Select Platforms...'),
+          EnhancedPlatformMenu.custom(
+            label: t.share,
+            menus: [
+              EnhancedPlatformMenuItem(
+                label: t.noDocument,
+                onSelected: (){},
+              ),
+            ],
+          ),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
           EnhancedPlatformMenuItem(
-            label: 'Print Settings ...',
-            shortcut: const SingleActivator(LogicalKeyboardKey.keyP, shift: true, meta: true),
+            label: t.reimportWordFile,
+            onSelected: (){},
+          ),
+          EnhancedPlatformMenu.custom(
+            label: t.reuseElementsFrom,
+            menus: [
+              EnhancedPlatformMenuItem(
+                label: t.others,
+                onSelected: (){},
+              ),
+            ],
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.reuseSummary,
+            onSelected: (){},
+          ),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.generateBooks,
+            shortcut: const SingleActivator(
+              LogicalKeyboardKey.keyB,
+              shift: true,
+              meta: true,
+            ),
+            onSelected: () {},
+          ),
+          EnhancedPlatformMenu.custom(
+            label: t.exportContentAs,
+            menus: [
+              EnhancedPlatformMenuItem(
+                label: t.exportWordFile,
+                onSelected: (){},
+              ),
+              EnhancedPlatformMenuItem(
+                label: t.exportRichTextFormat,
+                onSelected: (){},
+              ),
+            ],
+          ),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.selectPlatforms,
+            onSelected: (){},
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.printSettings,
+            shortcut: const SingleActivator(
+              LogicalKeyboardKey.keyP,
+              shift: true,
+              meta: true,
+            ),
+            onSelected:  (){},
           ),
         ],
       ),

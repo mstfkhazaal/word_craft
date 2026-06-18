@@ -4,9 +4,9 @@
 /// To regenerate, run: `dart run slang`
 ///
 /// Locales: 2
-/// Strings: 250 (125 per locale)
+/// Strings: 486 (243 per locale)
 ///
-/// Built on 2026-06-18 at 09:26 UTC
+/// Built on 2026-06-18 at 10:58 UTC
 
 // coverage:ignore-file
 // ignore_for_file: type=lint, unused_import
@@ -17,7 +17,7 @@ import 'package:slang/generated.dart';
 import 'package:slang_flutter/slang_flutter.dart';
 export 'package:slang_flutter/slang_flutter.dart';
 
-import 'translations_ar.g.dart' deferred as l_ar;
+import 'translations_ar.g.dart' as l_ar;
 part 'translations_en.g.dart';
 
 /// Supported locales.
@@ -49,21 +49,11 @@ enum AppLocale with BaseAppLocale<AppLocale, Translations> {
     PluralResolver? cardinalResolver,
     PluralResolver? ordinalResolver,
   }) async {
-    switch (this) {
-      case AppLocale.en:
-        return TranslationsEn(
-          overrides: overrides,
-          cardinalResolver: cardinalResolver,
-          ordinalResolver: ordinalResolver,
-        );
-      case AppLocale.ar:
-        await l_ar.loadLibrary();
-        return l_ar.TranslationsAr(
-          overrides: overrides,
-          cardinalResolver: cardinalResolver,
-          ordinalResolver: ordinalResolver,
-        );
-    }
+    return buildSync(
+      overrides: overrides,
+      cardinalResolver: cardinalResolver,
+      ordinalResolver: ordinalResolver,
+    );
   }
 
   @override
@@ -137,7 +127,7 @@ class LocaleSettings extends BaseFlutterLocaleSettings<AppLocale, Translations> 
   LocaleSettings._()
     : super(
         utils: AppLocaleUtils.instance,
-        lazy: true,
+        lazy: false,
       );
 
   static final instance = LocaleSettings._();

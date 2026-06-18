@@ -7,147 +7,187 @@ bool spellingWhileTyping = true;
 bool checkGrammarWithSpelling = true;
 bool correctSpellingAutomatically = true;
 
-void toggleSpellingWhileTyping() => spellingWhileTyping = !spellingWhileTyping;
+void toggleSpellingWhileTyping() {
+  spellingWhileTyping = !spellingWhileTyping;
+}
 
-void toggleCheckGrammarWithSpelling() => checkGrammarWithSpelling = !checkGrammarWithSpelling;
+void toggleCheckGrammarWithSpelling() {
+  checkGrammarWithSpelling = !checkGrammarWithSpelling;
+}
 
-void toggleCorrectSpellingAutomatically() =>
-    correctSpellingAutomatically = !correctSpellingAutomatically;
+void toggleCorrectSpellingAutomatically() {
+  correctSpellingAutomatically = !correctSpellingAutomatically;
+}
 
-EnhancedPlatformMenu menuEdit() {
+EnhancedPlatformMenu menuEdit(Translations translations) {
+  final t = translations.menu.edit;
   return EnhancedPlatformMenu.standard(
-    label: t.menu.edit.label,
     identifier: StandardMenuIdentifier.edit,
+    label: t.label,
     menus: [
       PlatformMenuItemGroup(
         members: [
           PlatformMenuItem(
-            label: 'Undo',
+            label: t.undo,
             shortcut: const SingleActivator(LogicalKeyboardKey.keyZ, meta: true),
+            onSelected: (){},
           ),
           PlatformMenuItem(
-            label: 'Redo',
-            shortcut: const SingleActivator(LogicalKeyboardKey.keyZ, meta: true, shift: true),
+            label: t.redo,
+            shortcut: const SingleActivator(
+              LogicalKeyboardKey.keyZ,
+              meta: true,
+              shift: true,
+            ),
+            onSelected: (){},
           ),
         ],
       ),
       PlatformMenuItemGroup(
         members: [
           PlatformMenuItem(
-            label: 'Cut',
+            label: t.cut,
             shortcut: const SingleActivator(LogicalKeyboardKey.keyX, meta: true),
+            onSelected: (){},
           ),
           PlatformMenuItem(
-            label: 'Copy',
+            label: t.copy,
             shortcut: const SingleActivator(LogicalKeyboardKey.keyC, meta: true),
+            onSelected: (){},
           ),
           PlatformMenuItem(
-            label: 'Paste',
+            label: t.paste,
             shortcut: const SingleActivator(LogicalKeyboardKey.keyV, meta: true),
+            onSelected: (){},
           ),
-
           PlatformMenuItem(
-            label: 'Paste and Match Style',
+            label: t.pasteAndMatchStyle,
             shortcut: const SingleActivator(
               LogicalKeyboardKey.keyV,
               alt: true,
               shift: true,
               meta: true,
             ),
+            onSelected: (){},
           ),
           PlatformMenuItem(
-            label: 'Delete',
-            shortcut: const SingleActivator(LogicalKeyboardKey.backspace, meta: true),
+            label: t.delete,
+            shortcut: const SingleActivator(LogicalKeyboardKey.backspace),
+            onSelected: (){},
           ),
           PlatformMenuItem(
-            label: 'Select All',
+            label: t.selectAll,
             shortcut: const SingleActivator(LogicalKeyboardKey.keyA, meta: true),
+            onSelected: (){},
           ),
         ],
       ),
-
       PlatformMenuItemGroup(
         members: [
           PlatformMenu(
-            label: 'Find',
+            label: t.find.label,
             menus: [
               PlatformMenuItemGroup(
                 members: [
                   PlatformMenuItem(
-                    label: 'Find...',
-                    shortcut: const SingleActivator(LogicalKeyboardKey.keyF, meta: true),
+                    label: t.find.find,
+                    shortcut: const SingleActivator(
+                      LogicalKeyboardKey.keyF,
+                      meta: true,
+                    ),
+                    onSelected: (){},
                   ),
                   PlatformMenuItem(
-                    label: 'Find and Replace',
+                    label: t.find.findAndReplace,
                     shortcut: const SingleActivator(
                       LogicalKeyboardKey.keyF,
                       control: true,
                       meta: true,
                     ),
+                    onSelected: (){},
                   ),
-                  PlatformMenuItem(label: 'Find Special...'),
+                  PlatformMenuItem(
+                    label: t.find.findSpecial,
+                    onSelected: (){},
+                  ),
                 ],
               ),
               PlatformMenuItemGroup(
                 members: [
                   PlatformMenuItem(
-                    label: 'Find Next',
-
-                    shortcut: const SingleActivator(LogicalKeyboardKey.keyG, meta: true),
+                    label: t.find.findNext,
+                    shortcut: const SingleActivator(
+                      LogicalKeyboardKey.keyG,
+                      meta: true,
+                    ),
+                    onSelected: (){},
                   ),
                   PlatformMenuItem(
-                    label: 'Find Previous',
+                    label: t.find.findPrevious,
                     shortcut: const SingleActivator(
                       LogicalKeyboardKey.keyG,
                       meta: true,
                       shift: true,
                     ),
+                    onSelected: (){},
                   ),
                 ],
               ),
               PlatformMenuItemGroup(
                 members: [
                   PlatformMenuItem(
-                    label: 'Use Selection For Find',
-                    shortcut: const SingleActivator(LogicalKeyboardKey.keyE, meta: true),
+                    label: t.find.useSelectionForFind,
+                    shortcut: const SingleActivator(
+                      LogicalKeyboardKey.keyE,
+                      meta: true,
+                    ),
+                    onSelected: (){},
                   ),
                   PlatformMenuItem(
-                    label: 'Jum to Selection',
-                    shortcut: const SingleActivator(LogicalKeyboardKey.keyJ, meta: true),
+                    label: t.find.jumpToSelection,
+                    shortcut: const SingleActivator(
+                      LogicalKeyboardKey.keyJ,
+                      meta: true,
+                    ),
+                    onSelected: (){},
                   ),
                 ],
               ),
             ],
           ),
           PlatformMenu(
-            label: 'Spelling and Grammar',
+            label: t.spellingAndGrammar.label,
             menus: [
               PlatformMenuItemGroup(
                 members: [
                   PlatformMenuItem(
-                    label: 'Show Spelling and Grammar',
-                    shortcut: const SingleActivator(LogicalKeyboardKey.compose, meta: true),
+                    label: t.spellingAndGrammar.show,
+                    onSelected: (){},
                   ),
                   PlatformMenuItem(
-                    label: 'Check Document Now',
-                    shortcut: const SingleActivator(LogicalKeyboardKey.comma, meta: true),
+                    label: t.spellingAndGrammar.checkDocumentNow,
+                    shortcut: const SingleActivator(
+                      LogicalKeyboardKey.semicolon,
+                      meta: true,
+                    ),
+                    onSelected: (){},
                   ),
                 ],
               ),
               EnhancedPlatformMenuItemGroup(
                 members: [
                   EnhancedPlatformMenuItem(
-                    label: 'Check Spelling While Typing',
+                    label: t.spellingAndGrammar.checkSpellingWhileTyping,
                     checked: spellingWhileTyping,
                     onSelected: toggleSpellingWhileTyping,
                   ),
                   EnhancedPlatformMenuItem(
-                    label: 'Check Grammar With Spelling',
+                    label: t.spellingAndGrammar.checkGrammarWithSpelling,
                     checked: checkGrammarWithSpelling,
                     onSelected: toggleCheckGrammarWithSpelling,
                   ),
                   EnhancedPlatformMenuItem(
-                    label: 'Correct Spelling Automatically',
+                    label: t.spellingAndGrammar.correctSpellingAutomatically,
                     checked: correctSpellingAutomatically,
                     onSelected: toggleCorrectSpellingAutomatically,
                   ),
@@ -155,10 +195,22 @@ EnhancedPlatformMenu menuEdit() {
               ),
             ],
           ),
-          PlatformMenu(label: 'Substitutions', menus: []),
-          PlatformMenu(label: 'Transformations', menus: []),
-          PlatformMenu(label: 'Speech', menus: []),
-          PlatformMenu(label: 'Special Characters', menus: []),
+          PlatformMenu(
+            label: t.substitutions,
+            menus: const [],
+          ),
+          PlatformMenu(
+            label: t.transformations,
+            menus: const [],
+          ),
+          PlatformMenu(
+            label: t.speech,
+            menus: const [],
+          ),
+          PlatformMenuItem(
+            label: t.specialCharacters,
+            onSelected: (){},
+          ),
         ],
       ),
     ],

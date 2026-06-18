@@ -15,11 +15,12 @@ import 'package:window_manager/window_manager.dart';
 
 Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
   WidgetsFlutterBinding.ensureInitialized();
+
   await windowManager.ensureInitialized();
 
   WidgetsBinding.instance.platformMenuDelegate = EnhancedPlatformMenuDelegate();
 
-  const windowOptions =  WindowOptions(
+  const windowOptions = WindowOptions(
     size: Size(700, 600),
     center: true,
     backgroundColor: Colors.transparent,
@@ -44,20 +45,22 @@ Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
     ),
   );
 
-
   configureDependencies();
 
   Bloc.observer = const AppBlocObserver();
 
   final applicationStartCubit = getIt<ApplicationStartCubit>();
 
-  final currentLocale =
-      applicationStartCubit.state.locale ??
-          LocaleSettings.useDeviceLocaleSync().languageCode;
+  final savedLocale = applicationStartCubit.state.locale;
+  final deviceLocale = WidgetsBinding.instance.platformDispatcher.locale;
 
-  await LocaleSettings.setLocaleRaw(currentLocale);
-  await LocaleSettings.setLocaleRaw(currentLocale);
+  final currentLocale = savedLocale ?? deviceLocale.languageCode;
+  final supportedLocale = AppLocaleUtils.parse(currentLocale);
 
+  await LocaleSettings.setLocale(AppLocale.ar);
+  debugPrint('SLANG LOCALE = ${LocaleSettings.currentLocale}');
+  debugPrint('APP NAME = ${t.app.name}');
+  debugPrint('FILE MENU = ${t.menu.file.label}');
   runApp(
     TranslationProvider(
       child: MultiBlocProvider(
@@ -68,6 +71,4 @@ Future<void> bootstrap(FutureOr<Widget> Function() builder) async {
       ),
     ),
   );
-
-
 }

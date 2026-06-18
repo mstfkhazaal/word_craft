@@ -1,4 +1,4 @@
 {
-  "fileNotFound": "الملف غير موجود: {path}",
+  "fileNotFound": "الملف غير موجود: $path",
   "openOrCreateFirst": "افتح أو أنشئ ملف .markbook أولًا."
 }

@@ -1,1570 +1,1711 @@
-Yes. Do it this way:
+Below is a clean Vellum-style menu implementation for your current structure.
 
-1. **AutoRoute** for navigation.
-2. **Cubit** for open/save/create/publish state.
-3. **No use cases now**. Use services directly inside Cubit. That is enough for this stage.
-4. First page should be a **Welcome / Recent Files** page like Vellum.
+Your current app already wraps `MaterialApp.router` with `PlatformMenuBar` and calls `menuApp()`, `menuFile()`, `menuEdit()`, `menuChapter()`, `menuText()`, `menuPreview()`, `menuView()`, `menuWindows()`, and `menuHelp()` . The problem is that several menu files are still hardcoded, `menuChapter()` and `menuPreview()` are empty  , and `menuText()` is still using the wrong lowercase label and repeated static strings .
 
-Your current `App` still uses `MaterialApp` with `home: const EditorPage()` , and your current `EditorPage` owns too much state directly with `setState`, file services, exporter, and `.markbook` paths inside the widget . Move that logic to a Cubit. Keep your existing `MarkBookContainerService`; it already packs/unpacks `.markbook` and validates `markbook.json` / `book.config.json` .
-
-AutoRoute is a good fit because it generates strongly typed route objects and is wired through `MaterialApp.router` with `routerConfig: _appRouter.config()` after generation. ([Dart packages][1]) Flutter Bloc’s `BlocProvider` is the right place to create and provide your Cubit, and it closes blocs automatically when it creates them. ([Dart packages][2]) For macOS file picking, `file_picker` supports directory picking, custom extensions, and save dialogs, including `getDirectoryPath()` and `saveFile()`. ([Dart packages][3])
+Slang supports JSON translation files, nested keys, namespaces, type-safe access, and `dart run slang` generation; it also documents `assets/i18n` as a valid input directory and `.i18n.json` as the common file pattern. ([Dart packages][1]) Flutter’s `PlatformMenuBar` is the correct native macOS menu API; it supplies menu data to the platform and has no normal visual representation in the widget tree. ([api.flutter.dev][2])
 
 ---
 
-## 1. Add dependencies
+## 1. Replace `assets/i18n/en/menu.i18n.json`
 
-In:
-
-```txt
-apps/publisher_app/pubspec.yaml
+```json
+{
+  "app": {
+    "label": "Word Craft",
+    "about": "About Word Craft",
+    "checkForUpdates": "Check For Updates…",
+    "settings": "Settings…"
+  },
+  "file": {
+    "label": "File",
+    "newBook": "New Book",
+    "newBookSet": "New Book Set…",
+    "open": "Open…",
+    "openRecent": "Open Recent",
+    "noRecentBooks": "No Recent Books",
+    "clearRecents": "Clear Recents",
+    "importWordFile": "Import Word File…",
+    "close": "Close",
+    "save": "Save",
+    "duplicate": "Duplicate",
+    "rename": "Rename",
+    "moveTo": "Move To",
+    "revertTo": "Revert To",
+    "noDocument": "No Document",
+    "share": "Share",
+    "reimportWordFile": "Reimport Word File…",
+    "reuseElementsFrom": "Reuse Elements From",
+    "others": "Others…",
+    "reuseSummary": "Reuse Summary…",
+    "generateBooks": "Generate Books…",
+    "exportContentAs": "Export Content As",
+    "exportWordFile": "Word File…",
+    "exportRichTextFormat": "Rich Text Format…",
+    "selectPlatforms": "Select Platforms…",
+    "printSettings": "Print Settings…"
+  },
+  "edit": {
+    "label": "Edit",
+    "undo": "Undo",
+    "redo": "Redo",
+    "cut": "Cut",
+    "copy": "Copy",
+    "paste": "Paste",
+    "pasteAndMatchStyle": "Paste and Match Style",
+    "delete": "Delete",
+    "selectAll": "Select All",
+    "find": {
+      "label": "Find",
+      "find": "Find…",
+      "findAndReplace": "Find and Replace",
+      "findSpecial": "Find Special…",
+      "findNext": "Find Next",
+      "findPrevious": "Find Previous",
+      "useSelectionForFind": "Use Selection For Find",
+      "jumpToSelection": "Jump to Selection"
+    },
+    "spellingAndGrammar": {
+      "label": "Spelling and Grammar",
+      "show": "Show Spelling and Grammar",
+      "checkDocumentNow": "Check Document Now",
+      "checkSpellingWhileTyping": "Check Spelling While Typing",
+      "checkGrammarWithSpelling": "Check Grammar With Spelling",
+      "correctSpellingAutomatically": "Correct Spelling Automatically"
+    },
+    "substitutions": "Substitutions",
+    "transformations": "Transformations",
+    "speech": "Speech",
+    "specialCharacters": "Special Characters"
+  },
+  "chapter": {
+    "label": "Chapter",
+    "addChapter": "Add Chapter",
+    "addElement": "Add Element",
+    "addMultipleElements": "Add Multiple Elements…",
+    "createPartFromSelection": "Create Part from Selection",
+    "createVolumeFromSelection": "Create Volume from Selection",
+    "convertTo": "Convert To",
+    "numbered": "Numbered",
+    "heading": "Heading",
+    "includeIn": "Include In",
+    "beginOn": "Begin On",
+    "insertPageBreak": "Insert Page Break",
+    "splitChapterAtCursor": "Split Chapter at Cursor",
+    "mergeSelectedChapters": "Merge Selected Chapters",
+    "goToPreviousChapter": "Go to Previous Chapter",
+    "goToNextChapter": "Go to Next Chapter",
+    "numbering": "Numbering…",
+    "terminology": "Terminology…",
+    "element": {
+      "blurbs": "Blurbs",
+      "halfTitle": "Half Title",
+      "titlePage": "Title Page",
+      "copyright": "Copyright",
+      "dedication": "Dedication",
+      "epigraph": "Epigraph",
+      "tableOfContents": "Table of Contents",
+      "foreword": "Foreword",
+      "introduction": "Introduction",
+      "preface": "Preface",
+      "prologue": "Prologue",
+      "epilogue": "Epilogue",
+      "afterword": "Afterword",
+      "endnotes": "Endnotes",
+      "bibliography": "Bibliography",
+      "acknowledgments": "Acknowledgments",
+      "aboutTheAuthor": "About the Author",
+      "alsoBy": "Also By",
+      "fullPageImage": "Full Page Image",
+      "uncategorized": "Uncategorized"
+    },
+    "convert": {
+      "chapter": "Chapter",
+      "blurbs": "Blurbs",
+      "copyright": "Copyright",
+      "dedication": "Dedication",
+      "epigraph": "Epigraph",
+      "foreword": "Foreword",
+      "introduction": "Introduction",
+      "preface": "Preface",
+      "prologue": "Prologue",
+      "epilogue": "Epilogue",
+      "afterword": "Afterword",
+      "bibliography": "Bibliography",
+      "acknowledgments": "Acknowledgments",
+      "aboutTheAuthor": "About the Author",
+      "alsoBy": "Also By",
+      "uncategorized": "Uncategorized"
+    },
+    "include": {
+      "allEditions": "All Editions",
+      "ebooksOnly": "Ebooks only",
+      "printOnly": "Print only"
+    },
+    "begin": {
+      "rightSideOfSpread": "Right Side of Spread",
+      "eitherSideOfSpread": "Either Side of Spread"
+    }
+  },
+  "text": {
+    "label": "Text",
+    "bold": "Bold",
+    "italic": "Italic",
+    "underline": "Underline",
+    "smallCaps": "Small Caps",
+    "sansSerif": "Sans Serif",
+    "monospace": "Monospace",
+    "superscript": "Superscript",
+    "subscript": "Subscript",
+    "strikethrough": "Strikethrough",
+    "addFeature": "Add Feature",
+    "feature": {
+      "subhead": "Subhead",
+      "ornamentalBreak": "Ornamental Break",
+      "image": "Image…",
+      "alignmentBlock": "Alignment Block",
+      "list": "List",
+      "blockQuotation": "Block Quotation",
+      "verse": "Verse",
+      "textConversation": "Text Conversation",
+      "writtenNote": "Written Note",
+      "webLink": "Web Link",
+      "storeLink": "Store Link",
+      "internalLink": "Internal Link",
+      "endnote": "Endnote",
+      "footnote": "Footnote"
+    }
+  },
+  "preview": {
+    "label": "Preview",
+    "device": "Device",
+    "previousPage": "Previous Page",
+    "nextPage": "Next Page",
+    "previousChapter": "Previous Chapter",
+    "nextChapter": "Next Chapter",
+    "showEditorContentInPreview": "Show Editor Content in Preview",
+    "showPreviewContentInEditor": "Show Preview Content in Editor",
+    "limitToPageSize": "Limit to Page Size",
+    "showBleedInProofMode": "Show Bleed in Proof Mode",
+    "devices": {
+      "kindle": "Kindle",
+      "fire": "Fire",
+      "paperwhite": "Paperwhite",
+      "appleBooks": "Apple Books",
+      "ipad": "iPad",
+      "iphone": "iPhone",
+      "nook": "Nook",
+      "simpleTouch": "Simple Touch",
+      "kobo": "Kobo",
+      "clara": "Clara",
+      "googlePlay": "Google Play",
+      "androidTablet": "Android Tablet",
+      "print": "Print"
+    }
+  },
+  "view": {
+    "label": "View",
+    "showTabBar": "Show Tab Bar",
+    "showAllTabs": "Show All Tabs",
+    "navigator": "Navigator",
+    "preview": "Preview",
+    "contents": "Contents",
+    "styles": "Styles",
+    "invisibleCharacters": "Invisible Characters",
+    "showToolbar": "Show Toolbar",
+    "customizeToolbar": "Customize Toolbar…",
+    "enterFullScreen": "Enter Full Screen"
+  },
+  "window": {
+    "label": "Window",
+    "minimize": "Minimize",
+    "zoom": "Zoom",
+    "fill": "Fill",
+    "center": "Center",
+    "moveAndResize": "Move & Resize",
+    "fullScreenTile": "Full Screen Tile",
+    "removeWindowFromSet": "Remove Window from Set",
+    "showPhotoLibrary": "Show Photo Library",
+    "showPreviousTab": "Show Previous Tab",
+    "showNextTab": "Show Next Tab",
+    "moveTabToNewWindow": "Move Tab to New Window",
+    "mergeAllWindows": "Merge All Windows",
+    "bringAllToFront": "Bring All to Front",
+    "wordCraft": "Word Craft",
+    "halves": "Halves",
+    "left": "Left",
+    "right": "Right",
+    "top": "Top",
+    "bottom": "Bottom",
+    "quarters": "Quarters",
+    "topLeft": "Top Left",
+    "topRight": "Top Right",
+    "bottomLeft": "Bottom Left",
+    "bottomRight": "Bottom Right",
+    "arrange": "Arrange",
+    "leftAndRight": "Left & Right",
+    "rightAndLeft": "Right & Left",
+    "topAndBottom": "Top & Bottom",
+    "bottomAndTop": "Bottom & Top",
+    "returnToPreviousSize": "Return to Previous Size"
+  },
+  "help": {
+    "label": "Help",
+    "search": "Search",
+    "tutorial": "Word Craft Tutorial",
+    "helpOverview": "Word Craft Help Overview",
+    "contactSupport": "Contact Word Craft Support…"
+  }
+}
 ```
 
-add:
+---
+
+## 2. Replace `assets/i18n/ar/menu.i18n.json`
+
+```json
+{
+  "app": {
+    "label": "وورد كرافت",
+    "about": "حول وورد كرافت",
+    "checkForUpdates": "التحقق من التحديثات…",
+    "settings": "الإعدادات…"
+  },
+  "file": {
+    "label": "ملف",
+    "newBook": "كتاب جديد",
+    "newBookSet": "مجموعة كتب جديدة…",
+    "open": "فتح…",
+    "openRecent": "فتح ملف حديث",
+    "noRecentBooks": "لا توجد كتب حديثة",
+    "clearRecents": "مسح الملفات الحديثة",
+    "importWordFile": "استيراد ملف وورد…",
+    "close": "إغلاق",
+    "save": "حفظ",
+    "duplicate": "نسخ",
+    "rename": "إعادة تسمية",
+    "moveTo": "نقل إلى",
+    "revertTo": "الرجوع إلى",
+    "noDocument": "لا يوجد مستند",
+    "share": "مشاركة",
+    "reimportWordFile": "إعادة استيراد ملف وورد…",
+    "reuseElementsFrom": "إعادة استخدام عناصر من",
+    "others": "أخرى…",
+    "reuseSummary": "إعادة استخدام الملخص…",
+    "generateBooks": "توليد الكتب…",
+    "exportContentAs": "تصدير المحتوى كـ",
+    "exportWordFile": "ملف وورد…",
+    "exportRichTextFormat": "تنسيق نص منسق…",
+    "selectPlatforms": "اختيار المنصات…",
+    "printSettings": "إعدادات الطباعة…"
+  },
+  "edit": {
+    "label": "تحرير",
+    "undo": "تراجع",
+    "redo": "إعادة",
+    "cut": "قص",
+    "copy": "نسخ",
+    "paste": "لصق",
+    "pasteAndMatchStyle": "لصق ومطابقة النمط",
+    "delete": "حذف",
+    "selectAll": "تحديد الكل",
+    "find": {
+      "label": "بحث",
+      "find": "بحث…",
+      "findAndReplace": "بحث واستبدال",
+      "findSpecial": "بحث خاص…",
+      "findNext": "بحث عن التالي",
+      "findPrevious": "بحث عن السابق",
+      "useSelectionForFind": "استخدام التحديد للبحث",
+      "jumpToSelection": "الانتقال إلى التحديد"
+    },
+    "spellingAndGrammar": {
+      "label": "الإملاء والقواعد",
+      "show": "عرض الإملاء والقواعد",
+      "checkDocumentNow": "فحص المستند الآن",
+      "checkSpellingWhileTyping": "فحص الإملاء أثناء الكتابة",
+      "checkGrammarWithSpelling": "فحص القواعد مع الإملاء",
+      "correctSpellingAutomatically": "تصحيح الإملاء تلقائيًا"
+    },
+    "substitutions": "الاستبدالات",
+    "transformations": "التحويلات",
+    "speech": "النطق",
+    "specialCharacters": "الأحرف الخاصة"
+  },
+  "chapter": {
+    "label": "الفصل",
+    "addChapter": "إضافة فصل",
+    "addElement": "إضافة عنصر",
+    "addMultipleElements": "إضافة عدة عناصر…",
+    "createPartFromSelection": "إنشاء جزء من التحديد",
+    "createVolumeFromSelection": "إنشاء مجلد من التحديد",
+    "convertTo": "تحويل إلى",
+    "numbered": "مرقم",
+    "heading": "العنوان",
+    "includeIn": "التضمين في",
+    "beginOn": "يبدأ على",
+    "insertPageBreak": "إدراج فاصل صفحة",
+    "splitChapterAtCursor": "تقسيم الفصل عند المؤشر",
+    "mergeSelectedChapters": "دمج الفصول المحددة",
+    "goToPreviousChapter": "الانتقال إلى الفصل السابق",
+    "goToNextChapter": "الانتقال إلى الفصل التالي",
+    "numbering": "الترقيم…",
+    "terminology": "المصطلحات…",
+    "element": {
+      "blurbs": "النصوص الترويجية",
+      "halfTitle": "نصف العنوان",
+      "titlePage": "صفحة العنوان",
+      "copyright": "حقوق النشر",
+      "dedication": "الإهداء",
+      "epigraph": "الاقتباس الافتتاحي",
+      "tableOfContents": "جدول المحتويات",
+      "foreword": "التقديم",
+      "introduction": "المقدمة",
+      "preface": "التمهيد",
+      "prologue": "الافتتاحية",
+      "epilogue": "الخاتمة",
+      "afterword": "كلمة ختامية",
+      "endnotes": "ملاحظات ختامية",
+      "bibliography": "المراجع",
+      "acknowledgments": "الشكر والتقدير",
+      "aboutTheAuthor": "عن المؤلف",
+      "alsoBy": "من أعماله أيضًا",
+      "fullPageImage": "صورة صفحة كاملة",
+      "uncategorized": "غير مصنف"
+    },
+    "convert": {
+      "chapter": "فصل",
+      "blurbs": "نصوص ترويجية",
+      "copyright": "حقوق النشر",
+      "dedication": "إهداء",
+      "epigraph": "اقتباس افتتاحي",
+      "foreword": "تقديم",
+      "introduction": "مقدمة",
+      "preface": "تمهيد",
+      "prologue": "افتتاحية",
+      "epilogue": "خاتمة",
+      "afterword": "كلمة ختامية",
+      "bibliography": "مراجع",
+      "acknowledgments": "شكر وتقدير",
+      "aboutTheAuthor": "عن المؤلف",
+      "alsoBy": "من أعماله أيضًا",
+      "uncategorized": "غير مصنف"
+    },
+    "include": {
+      "allEditions": "كل الإصدارات",
+      "ebooksOnly": "الكتب الإلكترونية فقط",
+      "printOnly": "الطباعة فقط"
+    },
+    "begin": {
+      "rightSideOfSpread": "الجانب الأيمن من الصفحة المزدوجة",
+      "eitherSideOfSpread": "أي جانب من الصفحة المزدوجة"
+    }
+  },
+  "text": {
+    "label": "النص",
+    "bold": "غامق",
+    "italic": "مائل",
+    "underline": "تحته خط",
+    "smallCaps": "حروف صغيرة كبيرة",
+    "sansSerif": "Sans Serif",
+    "monospace": "Monospace",
+    "superscript": "نص علوي",
+    "subscript": "نص سفلي",
+    "strikethrough": "يتوسطه خط",
+    "addFeature": "إضافة ميزة",
+    "feature": {
+      "subhead": "عنوان فرعي",
+      "ornamentalBreak": "فاصل زخرفي",
+      "image": "صورة…",
+      "alignmentBlock": "كتلة محاذاة",
+      "list": "قائمة",
+      "blockQuotation": "اقتباس كتلي",
+      "verse": "شعر",
+      "textConversation": "محادثة نصية",
+      "writtenNote": "ملاحظة مكتوبة",
+      "webLink": "رابط ويب",
+      "storeLink": "رابط متجر",
+      "internalLink": "رابط داخلي",
+      "endnote": "ملاحظة ختامية",
+      "footnote": "حاشية"
+    }
+  },
+  "preview": {
+    "label": "معاينة",
+    "device": "الجهاز",
+    "previousPage": "الصفحة السابقة",
+    "nextPage": "الصفحة التالية",
+    "previousChapter": "الفصل السابق",
+    "nextChapter": "الفصل التالي",
+    "showEditorContentInPreview": "عرض محتوى المحرر في المعاينة",
+    "showPreviewContentInEditor": "عرض محتوى المعاينة في المحرر",
+    "limitToPageSize": "تقييد بحجم الصفحة",
+    "showBleedInProofMode": "إظهار الهوامش النازفة في وضع التدقيق",
+    "devices": {
+      "kindle": "Kindle",
+      "fire": "Fire",
+      "paperwhite": "Paperwhite",
+      "appleBooks": "Apple Books",
+      "ipad": "iPad",
+      "iphone": "iPhone",
+      "nook": "Nook",
+      "simpleTouch": "Simple Touch",
+      "kobo": "Kobo",
+      "clara": "Clara",
+      "googlePlay": "Google Play",
+      "androidTablet": "Android Tablet",
+      "print": "Print"
+    }
+  },
+  "view": {
+    "label": "عرض",
+    "showTabBar": "إظهار شريط التبويب",
+    "showAllTabs": "إظهار كل التبويبات",
+    "navigator": "المتصفح",
+    "preview": "المعاينة",
+    "contents": "المحتويات",
+    "styles": "الأنماط",
+    "invisibleCharacters": "الأحرف المخفية",
+    "showToolbar": "إظهار شريط الأدوات",
+    "customizeToolbar": "تخصيص شريط الأدوات…",
+    "enterFullScreen": "دخول ملء الشاشة"
+  },
+  "window": {
+    "label": "نافذة",
+    "minimize": "تصغير",
+    "zoom": "تكبير",
+    "fill": "ملء",
+    "center": "توسيط",
+    "moveAndResize": "تحريك وتغيير الحجم",
+    "fullScreenTile": "تجانب ملء الشاشة",
+    "removeWindowFromSet": "إزالة النافذة من المجموعة",
+    "showPhotoLibrary": "عرض مكتبة الصور",
+    "showPreviousTab": "إظهار التبويب السابق",
+    "showNextTab": "إظهار التبويب التالي",
+    "moveTabToNewWindow": "نقل التبويب إلى نافذة جديدة",
+    "mergeAllWindows": "دمج كل النوافذ",
+    "bringAllToFront": "إحضار الكل إلى المقدمة",
+    "wordCraft": "وورد كرافت",
+    "halves": "أنصاف",
+    "left": "يسار",
+    "right": "يمين",
+    "top": "أعلى",
+    "bottom": "أسفل",
+    "quarters": "أرباع",
+    "topLeft": "أعلى اليسار",
+    "topRight": "أعلى اليمين",
+    "bottomLeft": "أسفل اليسار",
+    "bottomRight": "أسفل اليمين",
+    "arrange": "ترتيب",
+    "leftAndRight": "يسار ويمين",
+    "rightAndLeft": "يمين ويسار",
+    "topAndBottom": "أعلى وأسفل",
+    "bottomAndTop": "أسفل وأعلى",
+    "returnToPreviousSize": "العودة إلى الحجم السابق"
+  },
+  "help": {
+    "label": "مساعدة",
+    "search": "بحث",
+    "tutorial": "شرح وورد كرافت",
+    "helpOverview": "نظرة عامة على مساعدة وورد كرافت",
+    "contactSupport": "التواصل مع دعم وورد كرافت…"
+  }
+}
+```
+
+---
+
+## 3. Replace `lib/app/menu/menu.dart`
+
+```dart
+export 'menu_app.dart';
+export 'menu_chapter.dart';
+export 'menu_edit.dart';
+export 'menu_file.dart';
+export 'menu_help.dart';
+export 'menu_preview.dart';
+export 'menu_text.dart';
+export 'menu_view.dart';
+export 'menu_windows.dart';
+```
+
+---
+
+## 4. Replace `lib/app/menu/menu_app.dart`
+
+```dart
+import 'package:enhanced_platform_menu/enhanced_platform_menu_item.dart';
+import 'package:flutter/material.dart';
+import 'package:publisher_app/core/i18n/translations.g.dart';
+
+EnhancedPlatformMenu menuApp() {
+  return EnhancedPlatformMenu.standard(
+    identifier: StandardMenuIdentifier.application,
+    label: t.menu.app.label,
+    menus: [
+      if (PlatformProvidedMenuItem.hasMenu(PlatformProvidedMenuItemType.about))
+        const PlatformProvidedMenuItem(
+          type: PlatformProvidedMenuItemType.about,
+        ),
+      PlatformMenuItem(
+        label: t.menu.app.checkForUpdates,
+        onSelected: () {},
+      ),
+      PlatformMenuItemGroup(
+        members: [
+          PlatformMenuItem(
+            label: t.menu.app.settings,
+            onSelected: () {},
+          ),
+          if (PlatformProvidedMenuItem.hasMenu(PlatformProvidedMenuItemType.hide))
+            const PlatformProvidedMenuItem(
+              type: PlatformProvidedMenuItemType.hide,
+            ),
+          if (PlatformProvidedMenuItem.hasMenu(
+            PlatformProvidedMenuItemType.hideOtherApplications,
+          ))
+            const PlatformProvidedMenuItem(
+              type: PlatformProvidedMenuItemType.hideOtherApplications,
+            ),
+        ],
+      ),
+      if (PlatformProvidedMenuItem.hasMenu(
+        PlatformProvidedMenuItemType.showAllApplications,
+      ))
+        const PlatformProvidedMenuItem(
+          type: PlatformProvidedMenuItemType.showAllApplications,
+        ),
+      if (PlatformProvidedMenuItem.hasMenu(PlatformProvidedMenuItemType.quit))
+        const PlatformProvidedMenuItem(
+          type: PlatformProvidedMenuItemType.quit,
+        ),
+    ],
+  );
+}
+```
+
+---
+
+## 5. Replace `lib/app/menu/menu_file.dart`
+
+```dart
+import 'package:enhanced_platform_menu/enhanced_platform_menu_item.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:publisher_app/core/i18n/translations.g.dart';
+
+EnhancedPlatformMenu menuFile() {
+  return EnhancedPlatformMenu.standard(
+    identifier: StandardMenuIdentifier.file,
+    label: t.menu.file.label,
+    removeDefaultItems: true,
+    menus: [
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.menu.file.newBook,
+            shortcut: const SingleActivator(LogicalKeyboardKey.keyN, meta: true),
+            onSelected: () {},
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.menu.file.newBookSet,
+            onSelected: () {},
+          ),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.menu.file.open,
+            shortcut: const SingleActivator(LogicalKeyboardKey.keyO, meta: true),
+            onSelected: () {},
+          ),
+          EnhancedPlatformMenu.custom(
+            label: t.menu.file.openRecent,
+            menus: [
+              EnhancedPlatformMenuItem(
+                label: t.menu.file.clearRecents,
+                onSelected: () {},
+              ),
+            ],
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.menu.file.importWordFile,
+            onSelected: () {},
+          ),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.menu.file.close,
+            shortcut: const SingleActivator(LogicalKeyboardKey.keyW, meta: true),
+            onSelected: null,
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.menu.file.save,
+            shortcut: const SingleActivator(LogicalKeyboardKey.keyS, meta: true),
+            onSelected: null,
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.menu.file.duplicate,
+            shortcut: const SingleActivator(
+              LogicalKeyboardKey.keyS,
+              shift: true,
+              meta: true,
+            ),
+            onSelected: null,
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.menu.file.rename,
+            onSelected: null,
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.menu.file.moveTo,
+            onSelected: null,
+          ),
+          EnhancedPlatformMenu.custom(
+            label: t.menu.file.revertTo,
+            menus: [
+              EnhancedPlatformMenuItem(
+                label: t.menu.file.noDocument,
+                onSelected: null,
+              ),
+            ],
+          ),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenu.custom(
+            label: t.menu.file.share,
+            menus: [
+              EnhancedPlatformMenuItem(
+                label: t.menu.file.noDocument,
+                onSelected: null,
+              ),
+            ],
+          ),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.menu.file.reimportWordFile,
+            onSelected: null,
+          ),
+          EnhancedPlatformMenu.custom(
+            label: t.menu.file.reuseElementsFrom,
+            menus: [
+              EnhancedPlatformMenuItem(
+                label: t.menu.file.others,
+                onSelected: null,
+              ),
+            ],
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.menu.file.reuseSummary,
+            onSelected: null,
+          ),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.menu.file.generateBooks,
+            shortcut: const SingleActivator(
+              LogicalKeyboardKey.keyB,
+              shift: true,
+              meta: true,
+            ),
+            onSelected: () {},
+          ),
+          EnhancedPlatformMenu.custom(
+            label: t.menu.file.exportContentAs,
+            menus: [
+              EnhancedPlatformMenuItem(
+                label: t.menu.file.exportWordFile,
+                onSelected: null,
+              ),
+              EnhancedPlatformMenuItem(
+                label: t.menu.file.exportRichTextFormat,
+                onSelected: null,
+              ),
+            ],
+          ),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.menu.file.selectPlatforms,
+            onSelected: null,
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.menu.file.printSettings,
+            shortcut: const SingleActivator(
+              LogicalKeyboardKey.keyP,
+              shift: true,
+              meta: true,
+            ),
+            onSelected: null,
+          ),
+        ],
+      ),
+    ],
+  );
+}
+```
+
+---
+
+## 6. Replace `lib/app/menu/menu_edit.dart`
+
+```dart
+import 'package:enhanced_platform_menu/enhanced_platform_menu_item.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
+import 'package:publisher_app/core/i18n/translations.g.dart';
+
+bool spellingWhileTyping = true;
+bool checkGrammarWithSpelling = true;
+bool correctSpellingAutomatically = true;
+
+void toggleSpellingWhileTyping() {
+  spellingWhileTyping = !spellingWhileTyping;
+}
+
+void toggleCheckGrammarWithSpelling() {
+  checkGrammarWithSpelling = !checkGrammarWithSpelling;
+}
+
+void toggleCorrectSpellingAutomatically() {
+  correctSpellingAutomatically = !correctSpellingAutomatically;
+}
+
+EnhancedPlatformMenu menuEdit() {
+  return EnhancedPlatformMenu.standard(
+    identifier: StandardMenuIdentifier.edit,
+    label: t.menu.edit.label,
+    menus: [
+      PlatformMenuItemGroup(
+        members: [
+          PlatformMenuItem(
+            label: t.menu.edit.undo,
+            shortcut: const SingleActivator(LogicalKeyboardKey.keyZ, meta: true),
+            onSelected: null,
+          ),
+          PlatformMenuItem(
+            label: t.menu.edit.redo,
+            shortcut: const SingleActivator(
+              LogicalKeyboardKey.keyZ,
+              meta: true,
+              shift: true,
+            ),
+            onSelected: null,
+          ),
+        ],
+      ),
+      PlatformMenuItemGroup(
+        members: [
+          PlatformMenuItem(
+            label: t.menu.edit.cut,
+            shortcut: const SingleActivator(LogicalKeyboardKey.keyX, meta: true),
+            onSelected: null,
+          ),
+          PlatformMenuItem(
+            label: t.menu.edit.copy,
+            shortcut: const SingleActivator(LogicalKeyboardKey.keyC, meta: true),
+            onSelected: null,
+          ),
+          PlatformMenuItem(
+            label: t.menu.edit.paste,
+            shortcut: const SingleActivator(LogicalKeyboardKey.keyV, meta: true),
+            onSelected: null,
+          ),
+          PlatformMenuItem(
+            label: t.menu.edit.pasteAndMatchStyle,
+            shortcut: const SingleActivator(
+              LogicalKeyboardKey.keyV,
+              alt: true,
+              shift: true,
+              meta: true,
+            ),
+            onSelected: null,
+          ),
+          PlatformMenuItem(
+            label: t.menu.edit.delete,
+            shortcut: const SingleActivator(LogicalKeyboardKey.backspace),
+            onSelected: null,
+          ),
+          PlatformMenuItem(
+            label: t.menu.edit.selectAll,
+            shortcut: const SingleActivator(LogicalKeyboardKey.keyA, meta: true),
+            onSelected: null,
+          ),
+        ],
+      ),
+      PlatformMenuItemGroup(
+        members: [
+          PlatformMenu(
+            label: t.menu.edit.find.label,
+            menus: [
+              PlatformMenuItemGroup(
+                members: [
+                  PlatformMenuItem(
+                    label: t.menu.edit.find.find,
+                    shortcut: const SingleActivator(
+                      LogicalKeyboardKey.keyF,
+                      meta: true,
+                    ),
+                    onSelected: null,
+                  ),
+                  PlatformMenuItem(
+                    label: t.menu.edit.find.findAndReplace,
+                    shortcut: const SingleActivator(
+                      LogicalKeyboardKey.keyF,
+                      control: true,
+                      meta: true,
+                    ),
+                    onSelected: null,
+                  ),
+                  PlatformMenuItem(
+                    label: t.menu.edit.find.findSpecial,
+                    onSelected: null,
+                  ),
+                ],
+              ),
+              PlatformMenuItemGroup(
+                members: [
+                  PlatformMenuItem(
+                    label: t.menu.edit.find.findNext,
+                    shortcut: const SingleActivator(
+                      LogicalKeyboardKey.keyG,
+                      meta: true,
+                    ),
+                    onSelected: null,
+                  ),
+                  PlatformMenuItem(
+                    label: t.menu.edit.find.findPrevious,
+                    shortcut: const SingleActivator(
+                      LogicalKeyboardKey.keyG,
+                      meta: true,
+                      shift: true,
+                    ),
+                    onSelected: null,
+                  ),
+                ],
+              ),
+              PlatformMenuItemGroup(
+                members: [
+                  PlatformMenuItem(
+                    label: t.menu.edit.find.useSelectionForFind,
+                    shortcut: const SingleActivator(
+                      LogicalKeyboardKey.keyE,
+                      meta: true,
+                    ),
+                    onSelected: null,
+                  ),
+                  PlatformMenuItem(
+                    label: t.menu.edit.find.jumpToSelection,
+                    shortcut: const SingleActivator(
+                      LogicalKeyboardKey.keyJ,
+                      meta: true,
+                    ),
+                    onSelected: null,
+                  ),
+                ],
+              ),
+            ],
+          ),
+          PlatformMenu(
+            label: t.menu.edit.spellingAndGrammar.label,
+            menus: [
+              PlatformMenuItemGroup(
+                members: [
+                  PlatformMenuItem(
+                    label: t.menu.edit.spellingAndGrammar.show,
+                    onSelected: null,
+                  ),
+                  PlatformMenuItem(
+                    label: t.menu.edit.spellingAndGrammar.checkDocumentNow,
+                    shortcut: const SingleActivator(
+                      LogicalKeyboardKey.semicolon,
+                      meta: true,
+                    ),
+                    onSelected: null,
+                  ),
+                ],
+              ),
+              EnhancedPlatformMenuItemGroup(
+                members: [
+                  EnhancedPlatformMenuItem(
+                    label: t.menu.edit.spellingAndGrammar.checkSpellingWhileTyping,
+                    checked: spellingWhileTyping,
+                    onSelected: toggleSpellingWhileTyping,
+                  ),
+                  EnhancedPlatformMenuItem(
+                    label: t.menu.edit.spellingAndGrammar.checkGrammarWithSpelling,
+                    checked: checkGrammarWithSpelling,
+                    onSelected: toggleCheckGrammarWithSpelling,
+                  ),
+                  EnhancedPlatformMenuItem(
+                    label: t.menu.edit.spellingAndGrammar.correctSpellingAutomatically,
+                    checked: correctSpellingAutomatically,
+                    onSelected: toggleCorrectSpellingAutomatically,
+                  ),
+                ],
+              ),
+            ],
+          ),
+          PlatformMenu(
+            label: t.menu.edit.substitutions,
+            menus: const [],
+          ),
+          PlatformMenu(
+            label: t.menu.edit.transformations,
+            menus: const [],
+          ),
+          PlatformMenu(
+            label: t.menu.edit.speech,
+            menus: const [],
+          ),
+          PlatformMenuItem(
+            label: t.menu.edit.specialCharacters,
+            onSelected: null,
+          ),
+        ],
+      ),
+    ],
+  );
+}
+```
+
+---
+
+## 7. Replace `lib/app/menu/menu_chapter.dart`
+
+```dart
+import 'package:enhanced_platform_menu/enhanced_platform_menu_item.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:publisher_app/core/i18n/translations.g.dart';
+
+EnhancedPlatformMenu menuChapter() {
+  return EnhancedPlatformMenu.custom(
+    label: t.menu.chapter.label,
+    menus: [
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.menu.chapter.addChapter,
+            shortcut: const SingleActivator(
+              LogicalKeyboardKey.keyN,
+              meta: true,
+              shift: true,
+            ),
+            onSelected: null,
+          ),
+          EnhancedPlatformMenu.custom(
+            label: t.menu.chapter.addElement,
+            menus: [
+              EnhancedPlatformMenuItem(label: t.menu.chapter.element.blurbs, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.element.halfTitle, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.element.titlePage, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.element.copyright, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.element.dedication, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.element.epigraph, onSelected: null),
+              EnhancedPlatformMenuItem(
+                label: t.menu.chapter.element.tableOfContents,
+                onSelected: null,
+              ),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.element.foreword, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.element.introduction, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.element.preface, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.element.prologue, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.element.epilogue, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.element.afterword, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.element.endnotes, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.element.bibliography, onSelected: null),
+              EnhancedPlatformMenuItem(
+                label: t.menu.chapter.element.acknowledgments,
+                onSelected: null,
+              ),
+              EnhancedPlatformMenuItem(
+                label: t.menu.chapter.element.aboutTheAuthor,
+                onSelected: null,
+              ),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.element.alsoBy, onSelected: null),
+              EnhancedPlatformMenuItem(
+                label: t.menu.chapter.element.fullPageImage,
+                onSelected: null,
+              ),
+              EnhancedPlatformMenuItem(
+                label: t.menu.chapter.element.uncategorized,
+                onSelected: null,
+              ),
+            ],
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.menu.chapter.addMultipleElements,
+            onSelected: null,
+          ),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.menu.chapter.createPartFromSelection,
+            onSelected: null,
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.menu.chapter.createVolumeFromSelection,
+            onSelected: null,
+          ),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenu.custom(
+            label: t.menu.chapter.convertTo,
+            menus: [
+              EnhancedPlatformMenuItem(label: t.menu.chapter.convert.chapter, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.convert.blurbs, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.convert.copyright, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.convert.dedication, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.convert.epigraph, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.convert.foreword, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.convert.introduction, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.convert.preface, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.convert.prologue, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.convert.epilogue, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.convert.afterword, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.convert.bibliography, onSelected: null),
+              EnhancedPlatformMenuItem(
+                label: t.menu.chapter.convert.acknowledgments,
+                onSelected: null,
+              ),
+              EnhancedPlatformMenuItem(
+                label: t.menu.chapter.convert.aboutTheAuthor,
+                onSelected: null,
+              ),
+              EnhancedPlatformMenuItem(label: t.menu.chapter.convert.alsoBy, onSelected: null),
+              EnhancedPlatformMenuItem(
+                label: t.menu.chapter.convert.uncategorized,
+                onSelected: null,
+              ),
+            ],
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.menu.chapter.numbered,
+            checked: true,
+            onSelected: null,
+          ),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenu.custom(
+            label: t.menu.chapter.heading,
+            menus: [
+              EnhancedPlatformMenuItem(label: '1', onSelected: null),
+              EnhancedPlatformMenuItem(label: '2', onSelected: null),
+              EnhancedPlatformMenuItem(label: '3', onSelected: null),
+            ],
+          ),
+          EnhancedPlatformMenu.custom(
+            label: t.menu.chapter.includeIn,
+            menus: [
+              EnhancedPlatformMenuItem(
+                label: t.menu.chapter.include.allEditions,
+                onSelected: null,
+              ),
+              EnhancedPlatformMenuItem(
+                label: t.menu.chapter.include.ebooksOnly,
+                onSelected: null,
+              ),
+              EnhancedPlatformMenuItem(
+                label: t.menu.chapter.include.printOnly,
+                onSelected: null,
+              ),
+            ],
+          ),
+          EnhancedPlatformMenu.custom(
+            label: t.menu.chapter.beginOn,
+            menus: [
+              EnhancedPlatformMenuItem(
+                label: t.menu.chapter.begin.rightSideOfSpread,
+                onSelected: null,
+              ),
+              EnhancedPlatformMenuItem(
+                label: t.menu.chapter.begin.eitherSideOfSpread,
+                onSelected: null,
+              ),
+            ],
+          ),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.menu.chapter.insertPageBreak,
+            onSelected: null,
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.menu.chapter.splitChapterAtCursor,
+            onSelected: null,
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.menu.chapter.mergeSelectedChapters,
+            onSelected: null,
+          ),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.menu.chapter.goToPreviousChapter,
+            shortcut: const SingleActivator(
+              LogicalKeyboardKey.bracketLeft,
+              meta: true,
+              shift: true,
+            ),
+            onSelected: null,
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.menu.chapter.goToNextChapter,
+            shortcut: const SingleActivator(
+              LogicalKeyboardKey.bracketRight,
+              meta: true,
+              shift: true,
+            ),
+            onSelected: null,
+          ),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.menu.chapter.numbering,
+            onSelected: null,
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.menu.chapter.terminology,
+            onSelected: null,
+          ),
+        ],
+      ),
+    ],
+  );
+}
+```
+
+---
+
+## 8. Replace `lib/app/menu/menu_text.dart`
+
+```dart
+import 'package:enhanced_platform_menu/enhanced_platform_menu_item.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:publisher_app/core/i18n/translations.g.dart';
+
+EnhancedPlatformMenu menuText() {
+  return EnhancedPlatformMenu.custom(
+    label: t.menu.text.label,
+    menus: [
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.menu.text.bold,
+            shortcut: const SingleActivator(LogicalKeyboardKey.keyB, meta: true),
+            onSelected: null,
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.menu.text.italic,
+            shortcut: const SingleActivator(LogicalKeyboardKey.keyI, meta: true),
+            onSelected: null,
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.menu.text.underline,
+            shortcut: const SingleActivator(LogicalKeyboardKey.keyU, meta: true),
+            onSelected: null,
+          ),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(label: t.menu.text.smallCaps, onSelected: null),
+          EnhancedPlatformMenuItem(label: t.menu.text.sansSerif, onSelected: null),
+          EnhancedPlatformMenuItem(label: t.menu.text.monospace, onSelected: null),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(label: t.menu.text.superscript, onSelected: null),
+          EnhancedPlatformMenuItem(label: t.menu.text.subscript, onSelected: null),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(label: t.menu.text.strikethrough, onSelected: null),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenu.custom(
+            label: t.menu.text.addFeature,
+            menus: [
+              EnhancedPlatformMenuItem(
+                label: t.menu.text.feature.subhead,
+                shortcut: const SingleActivator(LogicalKeyboardKey.keyD, meta: true),
+                onSelected: null,
+              ),
+              EnhancedPlatformMenuItem(
+                label: t.menu.text.feature.ornamentalBreak,
+                shortcut: const SingleActivator(LogicalKeyboardKey.keyK, meta: true),
+                onSelected: null,
+              ),
+              EnhancedPlatformMenuItem(label: t.menu.text.feature.image, onSelected: null),
+              EnhancedPlatformMenuItem(
+                label: t.menu.text.feature.alignmentBlock,
+                shortcut: const SingleActivator(LogicalKeyboardKey.keyT, meta: true),
+                onSelected: null,
+              ),
+              EnhancedPlatformMenuItem(label: t.menu.text.feature.list, onSelected: null),
+              EnhancedPlatformMenuItem(
+                label: t.menu.text.feature.blockQuotation,
+                onSelected: null,
+              ),
+              EnhancedPlatformMenuItem(label: t.menu.text.feature.verse, onSelected: null),
+              EnhancedPlatformMenuItem(
+                label: t.menu.text.feature.textConversation,
+                onSelected: null,
+              ),
+              EnhancedPlatformMenuItem(label: t.menu.text.feature.writtenNote, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.text.feature.webLink, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.text.feature.storeLink, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.text.feature.internalLink, onSelected: null),
+              EnhancedPlatformMenuItem(
+                label: t.menu.text.feature.endnote,
+                shortcut: const SingleActivator(LogicalKeyboardKey.digit1, meta: true),
+                onSelected: null,
+              ),
+              EnhancedPlatformMenuItem(
+                label: t.menu.text.feature.footnote,
+                shortcut: const SingleActivator(LogicalKeyboardKey.digit2, meta: true),
+                onSelected: null,
+              ),
+            ],
+          ),
+        ],
+      ),
+    ],
+  );
+}
+```
+
+---
+
+## 9. Replace `lib/app/menu/menu_preview.dart`
+
+```dart
+import 'package:enhanced_platform_menu/enhanced_platform_menu_item.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:publisher_app/core/i18n/translations.g.dart';
+
+EnhancedPlatformMenu menuPreview() {
+  return EnhancedPlatformMenu.custom(
+    label: t.menu.preview.label,
+    menus: [
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenu.custom(
+            label: t.menu.preview.device,
+            menus: [
+              EnhancedPlatformMenuItem(label: t.menu.preview.devices.kindle, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.preview.devices.fire, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.preview.devices.paperwhite, onSelected: null),
+              EnhancedPlatformMenuItem(
+                label: t.menu.preview.devices.appleBooks,
+                onSelected: null,
+              ),
+              EnhancedPlatformMenuItem(label: t.menu.preview.devices.ipad, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.preview.devices.iphone, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.preview.devices.nook, onSelected: null),
+              EnhancedPlatformMenuItem(
+                label: t.menu.preview.devices.simpleTouch,
+                onSelected: null,
+              ),
+              EnhancedPlatformMenuItem(label: t.menu.preview.devices.kobo, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.preview.devices.clara, onSelected: null),
+              EnhancedPlatformMenuItem(
+                label: t.menu.preview.devices.googlePlay,
+                onSelected: null,
+              ),
+              EnhancedPlatformMenuItem(
+                label: t.menu.preview.devices.androidTablet,
+                onSelected: null,
+              ),
+              EnhancedPlatformMenuItem(label: t.menu.preview.devices.print, onSelected: null),
+            ],
+          ),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.menu.preview.previousPage,
+            shortcut: const SingleActivator(LogicalKeyboardKey.bracketLeft, meta: true),
+            onSelected: null,
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.menu.preview.nextPage,
+            shortcut: const SingleActivator(LogicalKeyboardKey.bracketRight, meta: true),
+            onSelected: null,
+          ),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(label: t.menu.preview.previousChapter, onSelected: null),
+          EnhancedPlatformMenuItem(label: t.menu.preview.nextChapter, onSelected: null),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.menu.preview.showEditorContentInPreview,
+            shortcut: const SingleActivator(LogicalKeyboardKey.keyY, meta: true),
+            onSelected: null,
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.menu.preview.showPreviewContentInEditor,
+            shortcut: const SingleActivator(
+              LogicalKeyboardKey.keyY,
+              meta: true,
+              shift: true,
+            ),
+            onSelected: null,
+          ),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.menu.preview.limitToPageSize,
+            checked: true,
+            onSelected: null,
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.menu.preview.showBleedInProofMode,
+            onSelected: null,
+          ),
+        ],
+      ),
+    ],
+  );
+}
+```
+
+---
+
+## 10. Replace `lib/app/menu/menu_view.dart`
+
+```dart
+import 'package:enhanced_platform_menu/enhanced_platform_menu_item.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:publisher_app/core/i18n/translations.g.dart';
+
+EnhancedPlatformMenu menuView() {
+  return EnhancedPlatformMenu.custom(
+    label: t.menu.view.label,
+    menus: [
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(label: t.menu.view.showTabBar, onSelected: null),
+          EnhancedPlatformMenuItem(
+            label: t.menu.view.showAllTabs,
+            shortcut: const SingleActivator(
+              LogicalKeyboardKey.backslash,
+              meta: true,
+              shift: true,
+            ),
+            onSelected: null,
+          ),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.menu.view.navigator,
+            checked: true,
+            shortcut: const SingleActivator(
+              LogicalKeyboardKey.keyT,
+              meta: true,
+              shift: true,
+            ),
+            onSelected: null,
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.menu.view.preview,
+            checked: true,
+            onSelected: null,
+          ),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.menu.view.contents,
+            checked: true,
+            onSelected: null,
+          ),
+          EnhancedPlatformMenuItem(label: t.menu.view.styles, onSelected: null),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(label: t.menu.view.invisibleCharacters, onSelected: null),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.menu.view.showToolbar,
+            shortcut: const SingleActivator(
+              LogicalKeyboardKey.keyT,
+              meta: true,
+              alt: true,
+            ),
+            onSelected: null,
+          ),
+          EnhancedPlatformMenuItem(label: t.menu.view.customizeToolbar, onSelected: null),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.menu.view.enterFullScreen,
+            onSelected: null,
+          ),
+        ],
+      ),
+    ],
+  );
+}
+```
+
+---
+
+## 11. Replace `lib/app/menu/menu_windows.dart`
+
+```dart
+import 'package:enhanced_platform_menu/enhanced_platform_menu_item.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:publisher_app/core/i18n/translations.g.dart';
+
+EnhancedPlatformMenu menuWindows() {
+  return EnhancedPlatformMenu.standard(
+    identifier: StandardMenuIdentifier.window,
+    label: t.menu.window.label,
+    removeDefaultItems: true,
+    menus: [
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.menu.window.minimize,
+            shortcut: const SingleActivator(LogicalKeyboardKey.keyM, meta: true),
+            onSelected: null,
+          ),
+          EnhancedPlatformMenuItem(label: t.menu.window.zoom, onSelected: null),
+          EnhancedPlatformMenuItem(
+            label: t.menu.window.fill,
+            shortcut: const SingleActivator(
+              LogicalKeyboardKey.keyF,
+              control: true,
+              fn: true,
+            ),
+            onSelected: null,
+          ),
+          EnhancedPlatformMenuItem(
+            label: t.menu.window.center,
+            shortcut: const SingleActivator(
+              LogicalKeyboardKey.keyC,
+              control: true,
+              fn: true,
+            ),
+            onSelected: null,
+          ),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenu.custom(
+            label: t.menu.window.moveAndResize,
+            menus: [
+              EnhancedPlatformMenuItem(label: t.menu.window.halves, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.window.left, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.window.right, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.window.top, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.window.bottom, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.window.quarters, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.window.topLeft, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.window.topRight, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.window.bottomLeft, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.window.bottomRight, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.window.arrange, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.window.leftAndRight, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.window.rightAndLeft, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.window.topAndBottom, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.window.bottomAndTop, onSelected: null),
+              EnhancedPlatformMenuItem(label: t.menu.window.quarters, onSelected: null),
+              EnhancedPlatformMenuItem(
+                label: t.menu.window.returnToPreviousSize,
+                shortcut: const SingleActivator(
+                  LogicalKeyboardKey.keyR,
+                  control: true,
+                  fn: true,
+                ),
+                onSelected: null,
+              ),
+            ],
+          ),
+          EnhancedPlatformMenuItem(label: t.menu.window.fullScreenTile, onSelected: null),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(label: t.menu.window.removeWindowFromSet, onSelected: null),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(label: t.menu.window.showPhotoLibrary, onSelected: () {}),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(label: t.menu.window.showPreviousTab, onSelected: null),
+          EnhancedPlatformMenuItem(label: t.menu.window.showNextTab, onSelected: null),
+          EnhancedPlatformMenuItem(label: t.menu.window.moveTabToNewWindow, onSelected: null),
+          EnhancedPlatformMenuItem(label: t.menu.window.mergeAllWindows, onSelected: null),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(label: t.menu.window.bringAllToFront, onSelected: () {}),
+        ],
+      ),
+      EnhancedPlatformMenuItemGroup(
+        members: [
+          EnhancedPlatformMenuItem(
+            label: t.menu.window.wordCraft,
+            checked: true,
+            onSelected: () {},
+          ),
+        ],
+      ),
+    ],
+  );
+}
+```
+
+---
+
+## 12. Replace `lib/app/menu/menu_help.dart`
+
+```dart
+import 'package:enhanced_platform_menu/enhanced_platform_menu_item.dart';
+import 'package:flutter/material.dart';
+import 'package:publisher_app/core/i18n/translations.g.dart';
+
+EnhancedPlatformMenu menuHelp() {
+  return EnhancedPlatformMenu.standard(
+    identifier: StandardMenuIdentifier.help,
+    label: t.menu.help.label,
+    menus: [
+      PlatformMenuItemGroup(
+        members: [
+          PlatformMenuItem(
+            label: t.menu.help.tutorial,
+            onSelected: () {},
+          ),
+          PlatformMenuItem(
+            label: t.menu.help.helpOverview,
+            onSelected: () {},
+          ),
+        ],
+      ),
+      PlatformMenuItemGroup(
+        members: [
+          PlatformMenuItem(
+            label: t.menu.help.contactSupport,
+            onSelected: () {},
+          ),
+        ],
+      ),
+    ],
+  );
+}
+```
+
+---
+
+## 13. Run generation
+
+From:
+
+```bash
+cd apps/publisher_app
+```
+
+run:
+
+```bash
+dart run slang
+dart format lib/app/menu
+flutter analyze
+flutter run -d macos --flavor development -t lib/main_development.dart
+```
+
+If Slang does not pick up split files, check your `slang.yaml`. It should include namespaces and assets input:
 
 ```yaml
-dependencies:
-  auto_route: ^11.1.0
-  flutter_bloc: ^9.1.1
-  file_picker: ^10.3.7
-  path_provider: ^2.1.5
-  path: ^1.9.1
-
-dev_dependencies:
-  auto_route_generator: ^11.0.0
-  build_runner: ^2.4.15
+base_locale: en
+fallback_strategy: base_locale
+input_directory: assets/i18n
+input_file_pattern: .i18n.json
+output_directory: lib/core/i18n
+output_file_name: translations.g.dart
+locale_handling: true
+flutter_integration: true
+namespaces: true
+translate_var: t
+enum_name: AppLocale
+class_name: Translations
+key_case: camel
+key_map_case: camel
+param_case: camel
+string_interpolation: braces
+flat_map: false
+format:
+  enabled: true
+  width: 100
 ```
 
-Run:
+One important fix: your files named `dialog.json` and `error.json` will **not** be picked up if your pattern is `.i18n.json`. Rename them:
 
 ```bash
-cd apps/publisher_app
-flutter pub get
+mv assets/i18n/en/dialog.json assets/i18n/en/dialog.i18n.json
+mv assets/i18n/en/error.json assets/i18n/en/error.i18n.json
+mv assets/i18n/ar/dialog.json assets/i18n/ar/dialog.i18n.json
+mv assets/i18n/ar/error.json assets/i18n/ar/error.i18n.json
 ```
 
----
+That keeps the Slang namespace structure consistent.
 
-## 2. Add AutoRoute
-
-Create:
-
-```txt
-apps/publisher_app/lib/app/router/app_router.dart
-```
-
-```dart
-import 'package:auto_route/auto_route.dart';
-import 'package:publisher_app/features/editor/presentation/editor_page.dart';
-import 'package:publisher_app/features/welcome/presentation/welcome_page.dart';
-
-part 'app_router.gr.dart';
-
-@AutoRouterConfig(replaceInRouteName: 'Page,Route')
-class AppRouter extends RootStackRouter {
-  @override
-  RouteType get defaultRouteType => const RouteType.adaptive();
-
-  @override
-  List<AutoRoute> get routes {
-    return [
-      AutoRoute(
-        page: WelcomeRoute.page,
-        path: '/',
-        initial: true,
-      ),
-      AutoRoute(
-        page: EditorRoute.page,
-        path: '/editor',
-      ),
-    ];
-  }
-}
-```
-
-Then generate routes:
-
-```bash
-dart run build_runner build --delete-conflicting-outputs
-```
-
----
-
-## 3. Replace `App`
-
-Replace:
-
-```txt
-apps/publisher_app/lib/app/view/app.dart
-```
-
-with:
-
-```dart
-import 'package:flutter/material.dart';
-import 'package:publisher_app/app/router/app_router.dart';
-
-class App extends StatefulWidget {
-  const App({super.key});
-
-  @override
-  State<App> createState() => _AppState();
-}
-
-class _AppState extends State<App> {
-  final AppRouter _appRouter = AppRouter();
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'Word Craft',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        colorSchemeSeed: const Color(0xFFC77DFF),
-        fontFamily: '.SF Pro Display',
-      ),
-      routerConfig: _appRouter.config(),
-    );
-  }
-}
-```
-
----
-
-## 4. Add editor state
-
-Create:
-
-```txt
-apps/publisher_app/lib/features/editor/application/book_editor_state.dart
-```
-
-```dart
-import 'dart:typed_data';
-
-import 'package:book_core/book_core.dart';
-
-enum BookEditorStatus {
-  initial,
-  loading,
-  ready,
-  saving,
-  exporting,
-  failure,
-}
-
-class RecentMarkBook {
-  const RecentMarkBook({
-    required this.title,
-    required this.filePath,
-    required this.directoryPath,
-    this.coverImagePath,
-  });
-
-  final String title;
-  final String filePath;
-  final String directoryPath;
-  final String? coverImagePath;
-}
-
-class BookEditorState {
-  const BookEditorState({
-    required this.status,
-    required this.recentFiles,
-    this.project,
-    this.selectedChapter,
-    this.openedMarkBookPath,
-    this.workingDirectoryPath,
-    this.markdownDraft = '',
-    this.errorMessage,
-    this.pdfPreviewBytes,
-  });
-
-  const BookEditorState.initial()
-      : status = BookEditorStatus.initial,
-        recentFiles = const [],
-        project = null,
-        selectedChapter = null,
-        openedMarkBookPath = null,
-        workingDirectoryPath = null,
-        markdownDraft = '',
-        errorMessage = null,
-        pdfPreviewBytes = null;
-
-  final BookEditorStatus status;
-  final List<RecentMarkBook> recentFiles;
-  final BookProject? project;
-  final BookChapter? selectedChapter;
-  final String? openedMarkBookPath;
-  final String? workingDirectoryPath;
-  final String markdownDraft;
-  final String? errorMessage;
-  final Uint8List? pdfPreviewBytes;
-
-  bool get hasProject => project != null;
-
-  bool get canSave {
-    return project != null &&
-        selectedChapter != null &&
-        openedMarkBookPath != null &&
-        workingDirectoryPath != null;
-  }
-
-  BookEditorState copyWith({
-    BookEditorStatus? status,
-    List<RecentMarkBook>? recentFiles,
-    BookProject? project,
-    BookChapter? selectedChapter,
-    String? openedMarkBookPath,
-    String? workingDirectoryPath,
-    String? markdownDraft,
-    String? errorMessage,
-    Uint8List? pdfPreviewBytes,
-    bool clearError = false,
-    bool clearPdfPreview = false,
-  }) {
-    return BookEditorState(
-      status: status ?? this.status,
-      recentFiles: recentFiles ?? this.recentFiles,
-      project: project ?? this.project,
-      selectedChapter: selectedChapter ?? this.selectedChapter,
-      openedMarkBookPath: openedMarkBookPath ?? this.openedMarkBookPath,
-      workingDirectoryPath: workingDirectoryPath ?? this.workingDirectoryPath,
-      markdownDraft: markdownDraft ?? this.markdownDraft,
-      errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
-      pdfPreviewBytes:
-          clearPdfPreview ? null : pdfPreviewBytes ?? this.pdfPreviewBytes,
-    );
-  }
-}
-```
-
----
-
-## 5. Add editor Cubit
-
-Create:
-
-```txt
-apps/publisher_app/lib/features/editor/application/book_editor_cubit.dart
-```
-
-```dart
-import 'dart:io';
-import 'dart:typed_data';
-
-import 'package:bloc/bloc.dart';
-import 'package:book_core/book_core.dart';
-import 'package:book_exporters/book_exporters.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
-import 'package:publisher_app/features/editor/application/book_editor_state.dart';
-
-class BookEditorCubit extends Cubit<BookEditorState> {
-  BookEditorCubit({
-    BookProjectCreator? creator,
-    BookProjectLoader? loader,
-    BookProjectWriter? writer,
-    MarkBookContainerService? containerService,
-    PdfBookExporter? pdfExporter,
-  })  : _creator = creator ?? BookProjectCreator(),
-        _loader = loader ?? BookProjectLoader(),
-        _writer = writer ?? BookProjectWriter(),
-        _containerService = containerService ?? MarkBookContainerService(),
-        _pdfExporter = pdfExporter ?? PdfBookExporter(),
-        super(const BookEditorState.initial());
-
-  final BookProjectCreator _creator;
-  final BookProjectLoader _loader;
-  final BookProjectWriter _writer;
-  final MarkBookContainerService _containerService;
-  final PdfBookExporter _pdfExporter;
-
-  Future<void> createMarkBook({
-    required String parentDirectoryPath,
-    required String title,
-    required String author,
-  }) async {
-    emit(
-      state.copyWith(
-        status: BookEditorStatus.loading,
-        clearError: true,
-        clearPdfPreview: true,
-      ),
-    );
-
-    try {
-      final safeName = _slugify(title);
-      final workingRoot = p.join(parentDirectoryPath, safeName);
-      final markBookPath = p.join(parentDirectoryPath, '$title.markbook');
-
-      await _creator.create(
-        rootPath: workingRoot,
-        title: title,
-        author: author,
-      );
-
-      await _containerService.packDirectory(
-        sourceDirectoryPath: workingRoot,
-        outputFilePath: markBookPath,
-      );
-
-      final loadedProject = await _loader.load(workingRoot);
-      final firstChapter = loadedProject.chapters.first;
-
-      emit(
-        state.copyWith(
-          status: BookEditorStatus.ready,
-          project: loadedProject,
-          selectedChapter: firstChapter,
-          openedMarkBookPath: markBookPath,
-          workingDirectoryPath: workingRoot,
-          markdownDraft: firstChapter.markdown,
-          recentFiles: _upsertRecentFile(
-            RecentMarkBook(
-              title: loadedProject.config.title,
-              filePath: markBookPath,
-              directoryPath: p.dirname(markBookPath),
-              coverImagePath: loadedProject.config.coverImagePath,
-            ),
-          ),
-        ),
-      );
-    } catch (error) {
-      emit(
-        state.copyWith(
-          status: BookEditorStatus.failure,
-          errorMessage: error.toString(),
-        ),
-      );
-    }
-  }
-
-  Future<void> openMarkBook(String markBookPath) async {
-    emit(
-      state.copyWith(
-        status: BookEditorStatus.loading,
-        clearError: true,
-        clearPdfPreview: true,
-      ),
-    );
-
-    try {
-      final workspaceRoot = await _workspaceRootPath();
-      final fileName = p.basenameWithoutExtension(markBookPath);
-      final workingRoot = p.join(workspaceRoot, fileName);
-
-      await _containerService.unpackToDirectory(
-        markBookFilePath: markBookPath,
-        destinationDirectoryPath: workingRoot,
-      );
-
-      final loadedProject = await _loader.load(workingRoot);
-      final firstChapter = loadedProject.chapters.first;
-
-      emit(
-        state.copyWith(
-          status: BookEditorStatus.ready,
-          project: loadedProject,
-          selectedChapter: firstChapter,
-          openedMarkBookPath: markBookPath,
-          workingDirectoryPath: workingRoot,
-          markdownDraft: firstChapter.markdown,
-          recentFiles: _upsertRecentFile(
-            RecentMarkBook(
-              title: loadedProject.config.title,
-              filePath: markBookPath,
-              directoryPath: p.dirname(markBookPath),
-              coverImagePath: loadedProject.config.coverImagePath,
-            ),
-          ),
-        ),
-      );
-    } catch (error) {
-      emit(
-        state.copyWith(
-          status: BookEditorStatus.failure,
-          errorMessage: error.toString(),
-        ),
-      );
-    }
-  }
-
-  void selectChapter(BookChapter chapter) {
-    emit(
-      state.copyWith(
-        selectedChapter: chapter,
-        markdownDraft: chapter.markdown,
-        clearPdfPreview: true,
-      ),
-    );
-  }
-
-  void updateMarkdownDraft(String value) {
-    emit(state.copyWith(markdownDraft: value));
-  }
-
-  Future<void> saveMarkBook() async {
-    final project = state.project;
-    final selectedChapter = state.selectedChapter;
-    final openedMarkBookPath = state.openedMarkBookPath;
-    final workingDirectoryPath = state.workingDirectoryPath;
-
-    if (project == null ||
-        selectedChapter == null ||
-        openedMarkBookPath == null ||
-        workingDirectoryPath == null) {
-      return;
-    }
-
-    emit(
-      state.copyWith(
-        status: BookEditorStatus.saving,
-        clearError: true,
-      ),
-    );
-
-    try {
-      await _writer.saveChapter(
-        rootPath: project.rootPath,
-        chapterPath: selectedChapter.path,
-        markdown: state.markdownDraft,
-      );
-
-      await _containerService.packDirectory(
-        sourceDirectoryPath: workingDirectoryPath,
-        outputFilePath: openedMarkBookPath,
-      );
-
-      final reloadedProject = await _loader.load(workingDirectoryPath);
-      final reloadedChapter = reloadedProject.chapters.firstWhere(
-        (chapter) => chapter.path == selectedChapter.path,
-      );
-
-      emit(
-        state.copyWith(
-          status: BookEditorStatus.ready,
-          project: reloadedProject,
-          selectedChapter: reloadedChapter,
-          markdownDraft: reloadedChapter.markdown,
-        ),
-      );
-    } catch (error) {
-      emit(
-        state.copyWith(
-          status: BookEditorStatus.failure,
-          errorMessage: error.toString(),
-        ),
-      );
-    }
-  }
-
-  Future<Uint8List?> buildPdfPreview() async {
-    final project = state.project;
-
-    if (project == null) {
-      return null;
-    }
-
-    emit(
-      state.copyWith(
-        status: BookEditorStatus.exporting,
-        clearError: true,
-        clearPdfPreview: true,
-      ),
-    );
-
-    try {
-      await saveMarkBook();
-
-      final workingDirectoryPath = state.workingDirectoryPath;
-      if (workingDirectoryPath == null) {
-        return null;
-      }
-
-      final reloadedProject = await _loader.load(workingDirectoryPath);
-      final bytes = await _pdfExporter.export(reloadedProject);
-
-      emit(
-        state.copyWith(
-          status: BookEditorStatus.ready,
-          pdfPreviewBytes: bytes,
-        ),
-      );
-
-      return bytes;
-    } catch (error) {
-      emit(
-        state.copyWith(
-          status: BookEditorStatus.failure,
-          errorMessage: error.toString(),
-        ),
-      );
-
-      return null;
-    }
-  }
-
-  List<RecentMarkBook> _upsertRecentFile(RecentMarkBook item) {
-    return [
-      item,
-      ...state.recentFiles.where((recent) => recent.filePath != item.filePath),
-    ];
-  }
-
-  Future<String> _workspaceRootPath() async {
-    final supportDirectory = await getApplicationSupportDirectory();
-    final workspaceDirectory = Directory(
-      p.join(supportDirectory.path, 'markbook_workspaces'),
-    );
-
-    await workspaceDirectory.create(recursive: true);
-
-    return workspaceDirectory.path;
-  }
-
-  String _slugify(String value) {
-    final slug = value
-        .trim()
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
-        .replaceAll(RegExp(r'^-|-$'), '');
-
-    if (slug.isEmpty) {
-      return 'untitled-book';
-    }
-
-    return slug;
-  }
-}
-```
-
----
-
-## 6. Add Welcome page like Vellum
-
-Create:
-
-```txt
-apps/publisher_app/lib/features/welcome/presentation/welcome_page.dart
-```
-
-```dart
-import 'dart:io';
-
-import 'package:auto_route/auto_route.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:publisher_app/app/router/app_router.gr.dart';
-import 'package:publisher_app/features/editor/application/book_editor_cubit.dart';
-import 'package:publisher_app/features/editor/application/book_editor_state.dart';
-
-@RoutePage()
-class WelcomePage extends StatelessWidget {
-  const WelcomePage({super.key});
-
-  Future<void> _createNewBook(BuildContext context) async {
-    final directoryPath = await FilePicker.platform.getDirectoryPath();
-
-    if (directoryPath == null || !context.mounted) {
-      return;
-    }
-
-    final result = await showDialog<_NewBookResult>(
-      context: context,
-      builder: (_) => const _NewBookDialog(),
-    );
-
-    if (result == null || !context.mounted) {
-      return;
-    }
-
-    await context.read<BookEditorCubit>().createMarkBook(
-          parentDirectoryPath: directoryPath,
-          title: result.title,
-          author: result.author,
-        );
-
-    if (!context.mounted) {
-      return;
-    }
-
-    await context.router.push(const EditorRoute());
-  }
-
-  Future<void> _openOther(BuildContext context) async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: const ['markbook'],
-      allowMultiple: false,
-    );
-
-    final path = result?.files.single.path;
-
-    if (path == null || !context.mounted) {
-      return;
-    }
-
-    await context.read<BookEditorCubit>().openMarkBook(path);
-
-    if (!context.mounted) {
-      return;
-    }
-
-    await context.router.push(const EditorRoute());
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocConsumer<BookEditorCubit, BookEditorState>(
-      listener: (context, state) {
-        final error = state.errorMessage;
-
-        if (error == null) {
-          return;
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error)),
-        );
-      },
-      builder: (context, state) {
-        final isBusy = state.status == BookEditorStatus.loading;
-
-        return Scaffold(
-          backgroundColor: const Color(0xFF1F1F22),
-          body: Center(
-            child: Container(
-              width: 1180,
-              height: 700,
-              decoration: BoxDecoration(
-                color: const Color(0xFF202023),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: const Color(0xFF4A4A4F)),
-                boxShadow: const [
-                  BoxShadow(
-                    blurRadius: 40,
-                    offset: Offset(0, 24),
-                    color: Color(0x66000000),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _WelcomeBrandPanel(
-                        isBusy: isBusy,
-                        onNewBook: () => _createNewBook(context),
-                      ),
-                    ),
-                    Container(
-                      width: 1,
-                      color: const Color(0xFF171719),
-                    ),
-                    Expanded(
-                      child: _RecentFilesPanel(
-                        isBusy: isBusy,
-                        recentFiles: state.recentFiles,
-                        onOpenOther: () => _openOther(context),
-                        onOpenRecent: (filePath) async {
-                          await context
-                              .read<BookEditorCubit>()
-                              .openMarkBook(filePath);
-
-                          if (!context.mounted) {
-                            return;
-                          }
-
-                          await context.router.push(const EditorRoute());
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _WelcomeBrandPanel extends StatelessWidget {
-  const _WelcomeBrandPanel({
-    required this.isBusy,
-    required this.onNewBook,
-  });
-
-  final bool isBusy;
-  final VoidCallback onNewBook;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFF252528),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(70, 44, 70, 36),
-        child: Column(
-          children: [
-            const _MacWindowDots(),
-            const Spacer(),
-            const _MarkBookFlower(),
-            const SizedBox(height: 36),
-            const Text(
-              'WORD CRAFT',
-              style: TextStyle(
-                color: Color(0xFFD8D8DD),
-                fontSize: 54,
-                letterSpacing: 3,
-                fontWeight: FontWeight.w300,
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Version 0.1.0',
-              style: TextStyle(
-                color: Color(0xFF9E9EA4),
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const Spacer(),
-            const Divider(color: Color(0xFF4A4A4F)),
-            const SizedBox(height: 30),
-            const _HelpLink(
-              icon: Icons.local_florist_outlined,
-              label: 'Show Word Craft Tutorial',
-            ),
-            const SizedBox(height: 18),
-            const _HelpLink(
-              icon: Icons.help_outline,
-              label: 'Open Help Overview',
-            ),
-            const SizedBox(height: 38),
-            const Divider(color: Color(0xFF4A4A4F)),
-            const SizedBox(height: 32),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                FilledButton(
-                  onPressed: isBusy ? null : onNewBook,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF3D3D43),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 28,
-                      vertical: 14,
-                    ),
-                  ),
-                  child: const Text(
-                    'New Book',
-                    style: TextStyle(fontSize: 18),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                FilledButton(
-                  onPressed: isBusy ? null : () {},
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF3D3D43),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 28,
-                      vertical: 14,
-                    ),
-                  ),
-                  child: const Text(
-                    'Import Word File...',
-                    style: TextStyle(fontSize: 18),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _RecentFilesPanel extends StatelessWidget {
-  const _RecentFilesPanel({
-    required this.isBusy,
-    required this.recentFiles,
-    required this.onOpenOther,
-    required this.onOpenRecent,
-  });
-
-  final bool isBusy;
-  final List<RecentMarkBook> recentFiles;
-  final VoidCallback onOpenOther;
-  final ValueChanged<String> onOpenRecent;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFF20201F),
-      padding: const EdgeInsets.fromLTRB(32, 36, 32, 28),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Recent Files',
-            style: TextStyle(
-              color: Color(0xFFA7A7AC),
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 28),
-          Expanded(
-            child: recentFiles.isEmpty
-                ? const _EmptyRecentFiles()
-                : ListView.separated(
-                    itemCount: recentFiles.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 18),
-                    itemBuilder: (context, index) {
-                      final recentFile = recentFiles[index];
-
-                      return _RecentFileTile(
-                        recentFile: recentFile,
-                        onTap: isBusy
-                            ? null
-                            : () => onOpenRecent(recentFile.filePath),
-                      );
-                    },
-                  ),
-          ),
-          const Divider(color: Color(0xFF4A4A4F)),
-          const SizedBox(height: 20),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              FilledButton(
-                onPressed: isBusy ? null : onOpenOther,
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF3D3D43),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 13,
-                  ),
-                ),
-                child: const Text(
-                  'Open Other...',
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
-              const SizedBox(width: 16),
-              FilledButton(
-                onPressed: null,
-                style: FilledButton.styleFrom(
-                  disabledBackgroundColor: const Color(0xFF333337),
-                  disabledForegroundColor: const Color(0xFF6B6B70),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 13,
-                  ),
-                ),
-                child: const Text(
-                  'Open Selected',
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RecentFileTile extends StatelessWidget {
-  const _RecentFileTile({
-    required this.recentFile,
-    required this.onTap,
-  });
-
-  final RecentMarkBook recentFile;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final coverPath = recentFile.coverImagePath;
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(10),
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Row(
-          children: [
-            Container(
-              width: 76,
-              height: 108,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8DCC7),
-                borderRadius: BorderRadius.circular(3),
-                border: Border.all(color: const Color(0xFF48484D)),
-                image: coverPath != null && File(coverPath).existsSync()
-                    ? DecorationImage(
-                        image: FileImage(File(coverPath)),
-                        fit: BoxFit.cover,
-                      )
-                    : null,
-              ),
-              child: coverPath == null
-                  ? const Icon(
-                      Icons.menu_book_rounded,
-                      color: Color(0xFF3C3C42),
-                      size: 36,
-                    )
-                  : null,
-            ),
-            const SizedBox(width: 18),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    recentFile.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFFE5E5EA),
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.folder_outlined,
-                        color: Color(0xFFA7A7AC),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          recentFile.directoryPath,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFFA7A7AC),
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    recentFile.filePath.split(Platform.pathSeparator).last,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFFA7A7AC),
-                      fontSize: 17,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyRecentFiles extends StatelessWidget {
-  const _EmptyRecentFiles();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        'No recent books yet.\nCreate a new .markbook or open an existing one.',
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: Color(0xFF8D8D93),
-          fontSize: 18,
-          height: 1.4,
-        ),
-      ),
-    );
-  }
-}
-
-class _HelpLink extends StatelessWidget {
-  const _HelpLink({
-    required this.icon,
-    required this.label,
-  });
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: const Color(0xFFCFA1D7), size: 28),
-        const SizedBox(width: 12),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFFCFA1D7),
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            decoration: TextDecoration.underline,
-            decorationColor: Color(0xFFCFA1D7),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _MacWindowDots extends StatelessWidget {
-  const _MacWindowDots();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Align(
-      alignment: Alignment.centerLeft,
-      child: Row(
-        children: [
-          _WindowDot(),
-          SizedBox(width: 14),
-          _WindowDot(),
-          SizedBox(width: 14),
-          _WindowDot(),
-        ],
-      ),
-    );
-  }
-}
-
-class _WindowDot extends StatelessWidget {
-  const _WindowDot();
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFF5A5A60),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: const SizedBox(width: 24, height: 24),
-    );
-  }
-}
-
-class _MarkBookFlower extends StatelessWidget {
-  const _MarkBookFlower();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 245,
-      height: 245,
-      child: CustomPaint(
-        painter: _FlowerPainter(),
-      ),
-    );
-  }
-}
-
-class _FlowerPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    final petalPaint = Paint()
-      ..shader = const LinearGradient(
-        colors: [
-          Color(0xFFFFFFFF),
-          Color(0xFFD7D1D3),
-        ],
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-      ).createShader(Offset.zero & size);
-
-    final accentPaint = Paint()
-      ..color = const Color(0xFFC638D5)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-
-    for (var i = 0; i < 5; i++) {
-      canvas.save();
-      canvas.translate(center.dx, center.dy);
-      canvas.rotate(i * 1.2566370614);
-      final path = Path()
-        ..moveTo(0, -8)
-        ..cubicTo(62, -92, 38, -138, 0, -156)
-        ..cubicTo(-38, -138, -62, -92, 0, -8)
-        ..close();
-
-      canvas.drawPath(path, petalPaint);
-      canvas.restore();
-    }
-
-    for (var i = 0; i < 10; i++) {
-      canvas.save();
-      canvas.translate(center.dx, center.dy);
-      canvas.rotate(i * 0.6283185307);
-      canvas.drawLine(const Offset(0, 0), const Offset(0, -92), accentPaint);
-      canvas.restore();
-    }
-
-    canvas.drawCircle(
-      center,
-      7,
-      Paint()..color = const Color(0xFFC638D5),
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _NewBookDialog extends StatefulWidget {
-  const _NewBookDialog();
-
-  @override
-  State<_NewBookDialog> createState() => _NewBookDialogState();
-}
-
-class _NewBookDialogState extends State<_NewBookDialog> {
-  final titleController = TextEditingController(text: 'My Book');
-  final authorController = TextEditingController(text: 'Mostafa Khazaal');
-
-  @override
-  void dispose() {
-    titleController.dispose();
-    authorController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('New MarkBook'),
-      content: SizedBox(
-        width: 420,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(
-                labelText: 'Book title',
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: authorController,
-              decoration: const InputDecoration(
-                labelText: 'Author',
-              ),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: Navigator.of(context).pop,
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () {
-            final title = titleController.text.trim();
-            final author = authorController.text.trim();
-
-            if (title.isEmpty || author.isEmpty) {
-              return;
-            }
-
-            Navigator.of(context).pop(
-              _NewBookResult(
-                title: title,
-                author: author,
-              ),
-            );
-          },
-          child: const Text('Create'),
-        ),
-      ],
-    );
-  }
-}
-
-class _NewBookResult {
-  const _NewBookResult({
-    required this.title,
-    required this.author,
-  });
-
-  final String title;
-  final String author;
-}
-```
-
----
-
-## 7. Update Editor page to use Cubit
-
-Replace your current:
-
-```txt
-apps/publisher_app/lib/features/editor/presentation/editor_page.dart
-```
-
-with:
-
-```dart
-import 'package:auto_route/auto_route.dart';
-import 'package:book_core/book_core.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
-import 'package:printing/printing.dart';
-import 'package:publisher_app/features/editor/application/book_editor_cubit.dart';
-import 'package:publisher_app/features/editor/application/book_editor_state.dart';
-
-@RoutePage()
-class EditorPage extends StatelessWidget {
-  const EditorPage({super.key});
-
-  Future<void> _previewPdf(BuildContext context) async {
-    final bytes = await context.read<BookEditorCubit>().buildPdfPreview();
-
-    if (bytes == null || !context.mounted) {
-      return;
-    }
-
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) {
-          return Scaffold(
-            appBar: AppBar(
-              title: const Text('PDF Preview'),
-            ),
-            body: PdfPreview(
-              build: (_) async => bytes,
-              canChangeOrientation: false,
-              canChangePageFormat: true,
-              allowPrinting: true,
-              allowSharing: true,
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocConsumer<BookEditorCubit, BookEditorState>(
-      listener: (context, state) {
-        final error = state.errorMessage;
-
-        if (error == null) {
-          return;
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error)),
-        );
-      },
-      builder: (context, state) {
-        final project = state.project;
-
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(project?.config.title ?? 'Word Craft'),
-            leading: IconButton(
-              onPressed: () => context.router.maybePop(),
-              icon: const Icon(Icons.arrow_back),
-            ),
-            actions: [
-              TextButton.icon(
-                onPressed: state.canSave
-                    ? () => context.read<BookEditorCubit>().saveMarkBook()
-                    : null,
-                icon: const Icon(Icons.save_outlined),
-                label: const Text('Save'),
-              ),
-              TextButton.icon(
-                onPressed: project == null ? null : () => _previewPdf(context),
-                icon: const Icon(Icons.picture_as_pdf_outlined),
-                label: const Text('Preview PDF'),
-              ),
-              const SizedBox(width: 12),
-            ],
-          ),
-          body: project == null
-              ? const Center(
-                  child: Text('Open or create a .markbook first.'),
-                )
-              : _EditorLayout(
-                  project: project,
-                  state: state,
-                ),
-        );
-      },
-    );
-  }
-}
-
-class _EditorLayout extends StatelessWidget {
-  const _EditorLayout({
-    required this.project,
-    required this.state,
-  });
-
-  final BookProject project;
-  final BookEditorState state;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _ChapterSidebar(
-          chapters: project.chapters,
-          selectedChapter: state.selectedChapter,
-        ),
-        const VerticalDivider(width: 1),
-        const Expanded(
-          child: _MarkdownEditorPane(),
-        ),
-        const VerticalDivider(width: 1),
-        const Expanded(
-          child: _MarkdownPreviewPane(),
-        ),
-      ],
-    );
-  }
-}
-
-class _ChapterSidebar extends StatelessWidget {
-  const _ChapterSidebar({
-    required this.chapters,
-    required this.selectedChapter,
-  });
-
-  final List<BookChapter> chapters;
-  final BookChapter? selectedChapter;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 280,
-      child: Material(
-        color: Theme.of(context).colorScheme.surface,
-        child: ListView(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: Text(
-                'Chapters',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-            for (final chapter in chapters)
-              ListTile(
-                title: Text(chapter.title),
-                subtitle: Text(chapter.path),
-                selected: chapter.path == selectedChapter?.path,
-                onTap: () {
-                  context.read<BookEditorCubit>().selectChapter(chapter);
-                },
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MarkdownEditorPane extends StatefulWidget {
-  const _MarkdownEditorPane();
-
-  @override
-  State<_MarkdownEditorPane> createState() => _MarkdownEditorPaneState();
-}
-
-class _MarkdownEditorPaneState extends State<_MarkdownEditorPane> {
-  final controller = TextEditingController();
-
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocListener<BookEditorCubit, BookEditorState>(
-      listenWhen: (previous, current) {
-        return previous.selectedChapter?.path != current.selectedChapter?.path ||
-            previous.markdownDraft != current.markdownDraft;
-      },
-      listener: (context, state) {
-        if (controller.text == state.markdownDraft) {
-          return;
-        }
-
-        controller.value = TextEditingValue(
-          text: state.markdownDraft,
-          selection: TextSelection.collapsed(
-            offset: state.markdownDraft.length,
-          ),
-        );
-      },
-      child: TextField(
-        controller: controller,
-        expands: true,
-        maxLines: null,
-        minLines: null,
-        textAlignVertical: TextAlignVertical.top,
-        style: const TextStyle(
-          fontFamily: 'monospace',
-          fontSize: 14,
-          height: 1.55,
-        ),
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.all(24),
-          hintText: 'Write Markdown...',
-        ),
-        onChanged: context.read<BookEditorCubit>().updateMarkdownDraft,
-      ),
-    );
-  }
-}
-
-class _MarkdownPreviewPane extends StatelessWidget {
-  const _MarkdownPreviewPane();
-
-  @override
-  Widget build(BuildContext context) {
-    final markdown = context.select(
-      (BookEditorCubit cubit) => cubit.state.markdownDraft,
-    );
-
-    return Markdown(
-      data: markdown,
-      padding: const EdgeInsets.all(32),
-    );
-  }
-}
-```
-
----
-
-## 8. Provide Cubit above router
-
-Update `App` again so the Cubit is available to both `WelcomePage` and `EditorPage`:
-
-```dart
-import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:publisher_app/app/router/app_router.dart';
-import 'package:publisher_app/features/editor/application/book_editor_cubit.dart';
-
-class App extends StatefulWidget {
-  const App({super.key});
-
-  @override
-  State<App> createState() => _AppState();
-}
-
-class _AppState extends State<App> {
-  final AppRouter _appRouter = AppRouter();
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => BookEditorCubit(),
-      child: MaterialApp.router(
-        title: 'Word Craft',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          useMaterial3: true,
-          brightness: Brightness.dark,
-          colorSchemeSeed: const Color(0xFFC77DFF),
-          fontFamily: '.SF Pro Display',
-        ),
-        routerConfig: _appRouter.config(),
-      ),
-    );
-  }
-}
-```
-
----
-
-## 9. Generate and run
-
-```bash
-cd apps/publisher_app
-
-dart run build_runner build --delete-conflicting-outputs
-flutter analyze
-flutter run --flavor development -t lib/main_development.dart -d macos
-```
-
----
-
-## Important structure now
-
-Your app should become:
-
-```txt
-apps/publisher_app/lib/
-  app/
-    router/
-      app_router.dart
-      app_router.gr.dart
-    view/
-      app.dart
-
-  features/
-    welcome/
-      presentation/
-        welcome_page.dart
-
-    editor/
-      application/
-        book_editor_cubit.dart
-        book_editor_state.dart
-      presentation/
-        editor_page.dart
-```
-
-No use cases yet. For now:
-
-```txt
-UI → Cubit → book_core services / book_exporters
-```
-
-Later, when the app grows:
-
-```txt
-UI → Cubit → Repository → Services
-```
-
-But today, Cubit + services is enough.
-
-[1]: https://pub.dev/packages/auto_route "auto_route | Flutter package"
-[2]: https://pub.dev/packages/flutter_bloc "flutter_bloc | Flutter package"
-[3]: https://pub.dev/packages/file_picker "file_picker | Flutter package"
+[1]: https://pub.dev/packages/slang "slang | Dart package"
+[2]: https://api.flutter.dev/flutter/widgets/PlatformMenuBar-class.html "PlatformMenuBar class - widgets library - Dart API"

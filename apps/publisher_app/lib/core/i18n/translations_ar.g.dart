@@ -64,7 +64,7 @@ class _Translations$app$ar extends Translations$app$en {
   @override
   String get name => 'وورد كرافت';
   @override
-  String get version => 'الإصدار {version}';
+  String version({required Object version}) => 'الإصدار ${version}';
   @override
   String get copyright => '© 2026 مصطفى خزعل';
 }
@@ -129,13 +129,13 @@ class _Translations$menu$ar extends Translations$menu$en {
   @override
   late final _Translations$menu$edit$ar edit = _Translations$menu$edit$ar._(_root);
   @override
-  late final _Translations$menu$view$ar view = _Translations$menu$view$ar._(_root);
+  late final _Translations$menu$chapter$ar chapter = _Translations$menu$chapter$ar._(_root);
   @override
   late final _Translations$menu$text$ar text = _Translations$menu$text$ar._(_root);
   @override
-  late final _Translations$menu$format$ar format = _Translations$menu$format$ar._(_root);
-  @override
   late final _Translations$menu$preview$ar preview = _Translations$menu$preview$ar._(_root);
+  @override
+  late final _Translations$menu$view$ar view = _Translations$menu$view$ar._(_root);
   @override
   late final _Translations$menu$window$ar window = _Translations$menu$window$ar._(_root);
   @override
@@ -178,13 +178,13 @@ class _Translations$menu$app$ar extends Translations$menu$app$en {
 
   // Translations
   @override
-  String get label => 'وورد كرافت';
+  String get label => 'Word Craft';
   @override
-  String get about => 'حول وورد كرافت';
+  String get about => 'About Word Craft';
   @override
-  String get checkForUpdates => 'التحقق من التحديثات…';
+  String get checkForUpdates => 'Check For Updates…';
   @override
-  String get settings => 'الإعدادات…';
+  String get settings => 'Settings…';
 }
 
 // Path: menu.file
@@ -195,63 +195,57 @@ class _Translations$menu$file$ar extends Translations$menu$file$en {
 
   // Translations
   @override
-  String get label => 'ملف';
+  String get label => 'File';
   @override
-  String get newBook => 'كتاب جديد';
+  String get newBook => 'New Book';
   @override
-  String get newBookSet => 'مجموعة كتب جديدة…';
+  String get newBookSet => 'New Book Set…';
   @override
-  String get open => 'فتح…';
+  String get open => 'Open…';
   @override
-  String get openRecent => 'فتح ملف حديث';
+  String get openRecent => 'Open Recent';
   @override
-  String get noRecentBooks => 'لا توجد كتب حديثة';
+  String get noRecentBooks => 'No Recent Books';
   @override
-  String get clearRecents => 'مسح الملفات الحديثة';
+  String get clearRecents => 'Clear Recents';
   @override
-  String get importWordFile => 'استيراد ملف وورد…';
+  String get importWordFile => 'Import Word File…';
   @override
-  String get close => 'إغلاق';
+  String get close => 'Close';
   @override
-  String get save => 'حفظ';
+  String get save => 'Save';
   @override
-  String get duplicate => 'نسخ';
+  String get duplicate => 'Duplicate';
   @override
-  String get rename => 'إعادة تسمية…';
+  String get rename => 'Rename';
   @override
-  String get moveTo => 'نقل إلى…';
+  String get moveTo => 'Move To';
   @override
-  String get revertTo => 'الرجوع إلى';
+  String get revertTo => 'Revert To';
   @override
-  String get lastSavedVersion => 'آخر نسخة محفوظة';
+  String get noDocument => 'No Document';
   @override
-  String get share => 'مشاركة';
+  String get share => 'Share';
   @override
-  String get shareMarkBook => 'مشاركة ملف MarkBook…';
+  String get reimportWordFile => 'Reimport Word File…';
   @override
-  String get reimportWordFile => 'إعادة استيراد ملف وورد…';
+  String get reuseElementsFrom => 'Reuse Elements From';
   @override
-  String get reuseElementsFrom => 'إعادة استخدام عناصر من';
+  String get others => 'Others…';
   @override
-  String get otherMarkBook => 'ملف MarkBook آخر…';
+  String get reuseSummary => 'Reuse Summary…';
   @override
-  String get reuseSummary => 'إعادة استخدام الملخص…';
+  String get generateBooks => 'Generate Books…';
   @override
-  String get generateBooks => 'توليد الكتب…';
+  String get exportContentAs => 'Export Content As';
   @override
-  String get exportContentAs => 'تصدير المحتوى كـ';
+  String get exportWordFile => 'Word File…';
   @override
-  String get exportMarkdownFiles => 'ملفات Markdown…';
+  String get exportRichTextFormat => 'Rich Text Format…';
   @override
-  String get exportHtml => 'HTML…';
+  String get selectPlatforms => 'Select Platforms…';
   @override
-  String get exportWordFile => 'ملف وورد…';
-  @override
-  String get exportRichTextFormat => 'تنسيق نص منسق…';
-  @override
-  String get selectPlatforms => 'اختيار المنصات…';
-  @override
-  String get printSettings => 'إعدادات الطباعة…';
+  String get printSettings => 'Print Settings…';
 }
 
 // Path: menu.edit
@@ -262,55 +256,89 @@ class _Translations$menu$edit$ar extends Translations$menu$edit$en {
 
   // Translations
   @override
-  String get label => 'تحرير';
+  String get label => 'Edit';
   @override
-  String get undo => 'تراجع';
+  String get undo => 'Undo';
   @override
-  String get redo => 'إعادة';
+  String get redo => 'Redo';
   @override
-  String get cut => 'قص';
+  String get cut => 'Cut';
   @override
-  String get copy => 'نسخ';
+  String get copy => 'Copy';
   @override
-  String get paste => 'لصق';
+  String get paste => 'Paste';
   @override
-  String get pasteAndMatchStyle => 'لصق ومطابقة النمط';
+  String get pasteAndMatchStyle => 'Paste and Match Style';
   @override
-  String get delete => 'حذف';
+  String get delete => 'Delete';
   @override
-  String get selectAll => 'تحديد الكل';
+  String get selectAll => 'Select All';
   @override
   late final _Translations$menu$edit$find$ar find = _Translations$menu$edit$find$ar._(_root);
   @override
   late final _Translations$menu$edit$spellingAndGrammar$ar spellingAndGrammar =
       _Translations$menu$edit$spellingAndGrammar$ar._(_root);
   @override
-  String get substitutions => 'الاستبدالات';
+  String get substitutions => 'Substitutions';
   @override
-  String get transformations => 'التحويلات';
+  String get transformations => 'Transformations';
   @override
-  String get speech => 'النطق';
+  String get speech => 'Speech';
   @override
-  String get specialCharacters => 'الأحرف الخاصة…';
+  String get specialCharacters => 'Special Characters';
 }
 
-// Path: menu.view
-class _Translations$menu$view$ar extends Translations$menu$view$en {
-  _Translations$menu$view$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+// Path: menu.chapter
+class _Translations$menu$chapter$ar extends Translations$menu$chapter$en {
+  _Translations$menu$chapter$ar._(TranslationsAr root) : this._root = root, super.internal(root);
 
   final TranslationsAr _root; // ignore: unused_field
 
   // Translations
   @override
-  String get label => 'عرض';
+  String get label => 'Chapter';
   @override
-  String get showSidebar => 'إظهار الشريط الجانبي';
+  String get addChapter => 'Add Chapter';
   @override
-  String get showInspector => 'إظهار لوحة الخصائص';
+  String get addElement => 'Add Element';
   @override
-  String get showPreview => 'إظهار المعاينة';
+  String get addMultipleElements => 'Add Multiple Elements…';
   @override
-  String get enterFullScreen => 'دخول ملء الشاشة';
+  String get createPartFromSelection => 'Create Part from Selection';
+  @override
+  String get createVolumeFromSelection => 'Create Volume from Selection';
+  @override
+  String get convertTo => 'Convert To';
+  @override
+  String get numbered => 'Numbered';
+  @override
+  String get heading => 'Heading';
+  @override
+  String get includeIn => 'Include In';
+  @override
+  String get beginOn => 'Begin On';
+  @override
+  String get insertPageBreak => 'Insert Page Break';
+  @override
+  String get splitChapterAtCursor => 'Split Chapter at Cursor';
+  @override
+  String get mergeSelectedChapters => 'Merge Selected Chapters';
+  @override
+  String get goToPreviousChapter => 'Go to Previous Chapter';
+  @override
+  String get goToNextChapter => 'Go to Next Chapter';
+  @override
+  String get numbering => 'Numbering…';
+  @override
+  String get terminology => 'Terminology…';
+  @override
+  late final _Translations$menu$chapter$element$ar element = _Translations$menu$chapter$element$ar._(_root);
+  @override
+  late final _Translations$menu$chapter$convert$ar convert = _Translations$menu$chapter$convert$ar._(_root);
+  @override
+  late final _Translations$menu$chapter$include$ar include = _Translations$menu$chapter$include$ar._(_root);
+  @override
+  late final _Translations$menu$chapter$begin$ar begin = _Translations$menu$chapter$begin$ar._(_root);
 }
 
 // Path: menu.text
@@ -321,50 +349,29 @@ class _Translations$menu$text$ar extends Translations$menu$text$en {
 
   // Translations
   @override
-  String get label => 'النص';
+  String get label => 'Text';
   @override
-  String get chapterTitle => 'عنوان الفصل';
+  String get bold => 'Bold';
   @override
-  String get heading => 'عنوان';
+  String get italic => 'Italic';
   @override
-  String get subheading => 'عنوان فرعي';
+  String get underline => 'Underline';
   @override
-  String get bodyText => 'نص عادي';
-  @override
-  String get blockQuote => 'اقتباس';
-  @override
-  String get codeBlock => 'كتلة كود';
-  @override
-  String get pageBreak => 'فاصل صفحة';
-}
-
-// Path: menu.format
-class _Translations$menu$format$ar extends Translations$menu$format$en {
-  _Translations$menu$format$ar._(TranslationsAr root) : this._root = root, super.internal(root);
-
-  final TranslationsAr _root; // ignore: unused_field
-
-  // Translations
-  @override
-  String get label => 'تنسيق';
-  @override
-  String get bold => 'غامق';
-  @override
-  String get italic => 'مائل';
-  @override
-  String get underline => 'تحته خط';
-  @override
-  String get smallCaps => 'حروف صغيرة كبيرة';
+  String get smallCaps => 'Small Caps';
   @override
   String get sansSerif => 'Sans Serif';
   @override
   String get monospace => 'Monospace';
   @override
-  String get superscript => 'نص علوي';
+  String get superscript => 'Superscript';
   @override
-  String get subscript => 'نص سفلي';
+  String get subscript => 'Subscript';
   @override
-  String get strikethrough => 'يتوسطه خط';
+  String get strikethrough => 'Strikethrough';
+  @override
+  String get addFeature => 'Add Feature';
+  @override
+  late final _Translations$menu$text$feature$ar feature = _Translations$menu$text$feature$ar._(_root);
 }
 
 // Path: menu.preview
@@ -375,13 +382,58 @@ class _Translations$menu$preview$ar extends Translations$menu$preview$en {
 
   // Translations
   @override
-  String get label => 'معاينة';
+  String get label => 'Preview';
   @override
-  String get previewPdf => 'معاينة PDF';
+  String get device => 'Device';
   @override
-  String get previewEpub => 'معاينة EPUB';
+  String get previousPage => 'Previous Page';
   @override
-  String get previewHtml => 'معاينة HTML';
+  String get nextPage => 'Next Page';
+  @override
+  String get previousChapter => 'Previous Chapter';
+  @override
+  String get nextChapter => 'Next Chapter';
+  @override
+  String get showEditorContentInPreview => 'Show Editor Content in Preview';
+  @override
+  String get showPreviewContentInEditor => 'Show Preview Content in Editor';
+  @override
+  String get limitToPageSize => 'Limit to Page Size';
+  @override
+  String get showBleedInProofMode => 'Show Bleed in Proof Mode';
+  @override
+  late final _Translations$menu$preview$devices$ar devices = _Translations$menu$preview$devices$ar._(_root);
+}
+
+// Path: menu.view
+class _Translations$menu$view$ar extends Translations$menu$view$en {
+  _Translations$menu$view$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+  final TranslationsAr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get label => 'View';
+  @override
+  String get showTabBar => 'Show Tab Bar';
+  @override
+  String get showAllTabs => 'Show All Tabs';
+  @override
+  String get navigator => 'Navigator';
+  @override
+  String get preview => 'Preview';
+  @override
+  String get contents => 'Contents';
+  @override
+  String get styles => 'Styles';
+  @override
+  String get invisibleCharacters => 'Invisible Characters';
+  @override
+  String get showToolbar => 'Show Toolbar';
+  @override
+  String get customizeToolbar => 'Customize Toolbar…';
+  @override
+  String get enterFullScreen => 'Enter Full Screen';
 }
 
 // Path: menu.window
@@ -392,7 +444,67 @@ class _Translations$menu$window$ar extends Translations$menu$window$en {
 
   // Translations
   @override
-  String get label => 'نافذة';
+  String get label => 'Window';
+  @override
+  String get minimize => 'Minimize';
+  @override
+  String get zoom => 'Zoom';
+  @override
+  String get fill => 'Fill';
+  @override
+  String get center => 'Center';
+  @override
+  String get moveAndResize => 'Move & Resize';
+  @override
+  String get fullScreenTile => 'Full Screen Tile';
+  @override
+  String get removeWindowFromSet => 'Remove Window from Set';
+  @override
+  String get showPhotoLibrary => 'Show Photo Library';
+  @override
+  String get showPreviousTab => 'Show Previous Tab';
+  @override
+  String get showNextTab => 'Show Next Tab';
+  @override
+  String get moveTabToNewWindow => 'Move Tab to New Window';
+  @override
+  String get mergeAllWindows => 'Merge All Windows';
+  @override
+  String get bringAllToFront => 'Bring All to Front';
+  @override
+  String get wordCraft => 'Word Craft';
+  @override
+  String get halves => 'Halves';
+  @override
+  String get left => 'Left';
+  @override
+  String get right => 'Right';
+  @override
+  String get top => 'Top';
+  @override
+  String get bottom => 'Bottom';
+  @override
+  String get quarters => 'Quarters';
+  @override
+  String get topLeft => 'Top Left';
+  @override
+  String get topRight => 'Top Right';
+  @override
+  String get bottomLeft => 'Bottom Left';
+  @override
+  String get bottomRight => 'Bottom Right';
+  @override
+  String get arrange => 'Arrange';
+  @override
+  String get leftAndRight => 'Left & Right';
+  @override
+  String get rightAndLeft => 'Right & Left';
+  @override
+  String get topAndBottom => 'Top & Bottom';
+  @override
+  String get bottomAndTop => 'Bottom & Top';
+  @override
+  String get returnToPreviousSize => 'Return to Previous Size';
 }
 
 // Path: menu.help
@@ -403,15 +515,15 @@ class _Translations$menu$help$ar extends Translations$menu$help$en {
 
   // Translations
   @override
-  String get label => 'مساعدة';
+  String get label => 'Help';
   @override
-  String get tutorial => 'شرح';
+  String get search => 'Search';
   @override
-  String get wordCraftTutorial => 'شرح وورد كرافت';
+  String get tutorial => 'Word Craft Tutorial';
   @override
-  String get helpOverview => 'نظرة عامة على المساعدة';
+  String get helpOverview => 'Word Craft Help Overview';
   @override
-  String get contactSupport => 'التواصل مع الدعم';
+  String get contactSupport => 'Contact Word Craft Support…';
 }
 
 // Path: pages.editor
@@ -464,21 +576,21 @@ class _Translations$menu$edit$find$ar extends Translations$menu$edit$find$en {
 
   // Translations
   @override
-  String get label => 'بحث';
+  String get label => 'Find';
   @override
-  String get find => 'بحث…';
+  String get find => 'Find…';
   @override
-  String get findAndReplace => 'بحث واستبدال…';
+  String get findAndReplace => 'Find and Replace';
   @override
-  String get findSpecial => 'بحث خاص…';
+  String get findSpecial => 'Find Special…';
   @override
-  String get findNext => 'بحث عن التالي';
+  String get findNext => 'Find Next';
   @override
-  String get findPrevious => 'بحث عن السابق';
+  String get findPrevious => 'Find Previous';
   @override
-  String get useSelectionForFind => 'استخدام التحديد للبحث';
+  String get useSelectionForFind => 'Use Selection For Find';
   @override
-  String get jumpToSelection => 'الانتقال إلى التحديد';
+  String get jumpToSelection => 'Jump to Selection';
 }
 
 // Path: menu.edit.spellingAndGrammar
@@ -489,15 +601,205 @@ class _Translations$menu$edit$spellingAndGrammar$ar extends Translations$menu$ed
 
   // Translations
   @override
-  String get label => 'الإملاء والقواعد';
+  String get label => 'Spelling and Grammar';
   @override
-  String get show => 'عرض الإملاء والقواعد';
+  String get show => 'Show Spelling and Grammar';
   @override
-  String get checkDocumentNow => 'فحص المستند الآن';
+  String get checkDocumentNow => 'Check Document Now';
   @override
-  String get checkSpellingWhileTyping => 'فحص الإملاء أثناء الكتابة';
+  String get checkSpellingWhileTyping => 'Check Spelling While Typing';
   @override
-  String get checkGrammarWithSpelling => 'فحص القواعد مع الإملاء';
+  String get checkGrammarWithSpelling => 'Check Grammar With Spelling';
   @override
-  String get correctSpellingAutomatically => 'تصحيح الإملاء تلقائيًا';
+  String get correctSpellingAutomatically => 'Correct Spelling Automatically';
+}
+
+// Path: menu.chapter.element
+class _Translations$menu$chapter$element$ar extends Translations$menu$chapter$element$en {
+  _Translations$menu$chapter$element$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+  final TranslationsAr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get blurbs => 'Blurbs';
+  @override
+  String get halfTitle => 'Half Title';
+  @override
+  String get titlePage => 'Title Page';
+  @override
+  String get copyright => 'Copyright';
+  @override
+  String get dedication => 'Dedication';
+  @override
+  String get epigraph => 'Epigraph';
+  @override
+  String get tableOfContents => 'Table of Contents';
+  @override
+  String get foreword => 'Foreword';
+  @override
+  String get introduction => 'Introduction';
+  @override
+  String get preface => 'Preface';
+  @override
+  String get prologue => 'Prologue';
+  @override
+  String get epilogue => 'Epilogue';
+  @override
+  String get afterword => 'Afterword';
+  @override
+  String get endnotes => 'Endnotes';
+  @override
+  String get bibliography => 'Bibliography';
+  @override
+  String get acknowledgments => 'Acknowledgments';
+  @override
+  String get aboutTheAuthor => 'About the Author';
+  @override
+  String get alsoBy => 'Also By';
+  @override
+  String get fullPageImage => 'Full Page Image';
+  @override
+  String get uncategorized => 'Uncategorized';
+}
+
+// Path: menu.chapter.convert
+class _Translations$menu$chapter$convert$ar extends Translations$menu$chapter$convert$en {
+  _Translations$menu$chapter$convert$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+  final TranslationsAr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get chapter => 'Chapter';
+  @override
+  String get blurbs => 'Blurbs';
+  @override
+  String get copyright => 'Copyright';
+  @override
+  String get dedication => 'Dedication';
+  @override
+  String get epigraph => 'Epigraph';
+  @override
+  String get foreword => 'Foreword';
+  @override
+  String get introduction => 'Introduction';
+  @override
+  String get preface => 'Preface';
+  @override
+  String get prologue => 'Prologue';
+  @override
+  String get epilogue => 'Epilogue';
+  @override
+  String get afterword => 'Afterword';
+  @override
+  String get bibliography => 'Bibliography';
+  @override
+  String get acknowledgments => 'Acknowledgments';
+  @override
+  String get aboutTheAuthor => 'About the Author';
+  @override
+  String get alsoBy => 'Also By';
+  @override
+  String get uncategorized => 'Uncategorized';
+}
+
+// Path: menu.chapter.include
+class _Translations$menu$chapter$include$ar extends Translations$menu$chapter$include$en {
+  _Translations$menu$chapter$include$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+  final TranslationsAr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get allEditions => 'All Editions';
+  @override
+  String get ebooksOnly => 'Ebooks only';
+  @override
+  String get printOnly => 'Print only';
+}
+
+// Path: menu.chapter.begin
+class _Translations$menu$chapter$begin$ar extends Translations$menu$chapter$begin$en {
+  _Translations$menu$chapter$begin$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+  final TranslationsAr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get rightSideOfSpread => 'Right Side of Spread';
+  @override
+  String get eitherSideOfSpread => 'Either Side of Spread';
+}
+
+// Path: menu.text.feature
+class _Translations$menu$text$feature$ar extends Translations$menu$text$feature$en {
+  _Translations$menu$text$feature$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+  final TranslationsAr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get subhead => 'Subhead';
+  @override
+  String get ornamentalBreak => 'Ornamental Break';
+  @override
+  String get image => 'Image…';
+  @override
+  String get alignmentBlock => 'Alignment Block';
+  @override
+  String get list => 'List';
+  @override
+  String get blockQuotation => 'Block Quotation';
+  @override
+  String get verse => 'Verse';
+  @override
+  String get textConversation => 'Text Conversation';
+  @override
+  String get writtenNote => 'Written Note';
+  @override
+  String get webLink => 'Web Link';
+  @override
+  String get storeLink => 'Store Link';
+  @override
+  String get internalLink => 'Internal Link';
+  @override
+  String get endnote => 'Endnote';
+  @override
+  String get footnote => 'Footnote';
+}
+
+// Path: menu.preview.devices
+class _Translations$menu$preview$devices$ar extends Translations$menu$preview$devices$en {
+  _Translations$menu$preview$devices$ar._(TranslationsAr root) : this._root = root, super.internal(root);
+
+  final TranslationsAr _root; // ignore: unused_field
+
+  // Translations
+  @override
+  String get kindle => 'Kindle';
+  @override
+  String get fire => 'Fire';
+  @override
+  String get paperwhite => 'Paperwhite';
+  @override
+  String get appleBooks => 'Apple Books';
+  @override
+  String get ipad => 'iPad';
+  @override
+  String get iphone => 'iPhone';
+  @override
+  String get nook => 'Nook';
+  @override
+  String get simpleTouch => 'Simple Touch';
+  @override
+  String get kobo => 'Kobo';
+  @override
+  String get clara => 'Clara';
+  @override
+  String get googlePlay => 'Google Play';
+  @override
+  String get androidTablet => 'Android Tablet';
+  @override
+  String get print => 'Print';
 }

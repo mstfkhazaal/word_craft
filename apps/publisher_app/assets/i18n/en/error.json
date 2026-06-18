@@ -1,4 +1,4 @@
 {
-  "fileNotFound": "File not found: {path}",
+  "fileNotFound": "File not found: $path",
   "openOrCreateFirst": "Open or create a .markbook first."
 }
