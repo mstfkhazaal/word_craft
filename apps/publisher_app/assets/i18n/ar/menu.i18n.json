@@ -1,0 +1,118 @@
+{
+  "app": {
+    "label": "وورد كرافت",
+    "about": "حول وورد كرافت",
+    "checkForUpdates": "التحقق من التحديثات…",
+    "settings": "الإعدادات…"
+  },
+  "file": {
+    "label": "ملف",
+    "newBook": "كتاب جديد",
+    "newBookSet": "مجموعة كتب جديدة…",
+    "open": "فتح…",
+    "openRecent": "فتح ملف حديث",
+    "noRecentBooks": "لا توجد كتب حديثة",
+    "clearRecents": "مسح الملفات الحديثة",
+    "importWordFile": "استيراد ملف وورد…",
+    "close": "إغلاق",
+    "save": "حفظ",
+    "duplicate": "نسخ",
+    "rename": "إعادة تسمية…",
+    "moveTo": "نقل إلى…",
+    "revertTo": "الرجوع إلى",
+    "lastSavedVersion": "آخر نسخة محفوظة",
+    "share": "مشاركة",
+    "shareMarkBook": "مشاركة ملف MarkBook…",
+    "reimportWordFile": "إعادة استيراد ملف وورد…",
+    "reuseElementsFrom": "إعادة استخدام عناصر من",
+    "otherMarkBook": "ملف MarkBook آخر…",
+    "reuseSummary": "إعادة استخدام الملخص…",
+    "generateBooks": "توليد الكتب…",
+    "exportContentAs": "تصدير المحتوى كـ",
+    "exportMarkdownFiles": "ملفات Markdown…",
+    "exportHtml": "HTML…",
+    "exportWordFile": "ملف وورد…",
+    "exportRichTextFormat": "تنسيق نص منسق…",
+    "selectPlatforms": "اختيار المنصات…",
+    "printSettings": "إعدادات الطباعة…"
+  },
+  "edit": {
+    "label": "تحرير",
+    "undo": "تراجع",
+    "redo": "إعادة",
+    "cut": "قص",
+    "copy": "نسخ",
+    "paste": "لصق",
+    "pasteAndMatchStyle": "لصق ومطابقة النمط",
+    "delete": "حذف",
+    "selectAll": "تحديد الكل",
+    "find": {
+      "label": "بحث",
+      "find": "بحث…",
+      "findAndReplace": "بحث واستبدال…",
+      "findSpecial": "بحث خاص…",
+      "findNext": "بحث عن التالي",
+      "findPrevious": "بحث عن السابق",
+      "useSelectionForFind": "استخدام التحديد للبحث",
+      "jumpToSelection": "الانتقال إلى التحديد"
+    },
+    "spellingAndGrammar": {
+      "label": "الإملاء والقواعد",
+      "show": "عرض الإملاء والقواعد",
+      "checkDocumentNow": "فحص المستند الآن",
+      "checkSpellingWhileTyping": "فحص الإملاء أثناء الكتابة",
+      "checkGrammarWithSpelling": "فحص القواعد مع الإملاء",
+      "correctSpellingAutomatically": "تصحيح الإملاء تلقائيًا"
+    },
+    "substitutions": "الاستبدالات",
+    "transformations": "التحويلات",
+    "speech": "النطق",
+    "specialCharacters": "الأحرف الخاصة…"
+  },
+  "view": {
+    "label": "عرض",
+    "showSidebar": "إظهار الشريط الجانبي",
+    "showInspector": "إظهار لوحة الخصائص",
+    "showPreview": "إظهار المعاينة",
+    "enterFullScreen": "دخول ملء الشاشة"
+  },
+  "text": {
+    "label": "النص",
+    "chapterTitle": "عنوان الفصل",
+    "heading": "عنوان",
+    "subheading": "عنوان فرعي",
+    "bodyText": "نص عادي",
+    "blockQuote": "اقتباس",
+    "codeBlock": "كتلة كود",
+    "pageBreak": "فاصل صفحة"
+  },
+  "format": {
+    "label": "تنسيق",
+    "bold": "غامق",
+    "italic": "مائل",
+    "underline": "تحته خط",
+    "smallCaps": "حروف صغيرة كبيرة",
+    "sansSerif": "Sans Serif",
+    "monospace": "Monospace",
+    "superscript": "نص علوي",
+    "subscript": "نص سفلي",
+    "strikethrough": "يتوسطه خط"
+  },
+  "preview": {
+    "label": "معاينة",
+    "previewPdf": "معاينة PDF",
+    "previewEpub": "معاينة EPUB",
+    "previewHtml": "معاينة HTML"
+  },
+  "window": {
+    "label": "نافذة"
+  },
+  "help": {
+    "label": "مساعدة",
+    "tutorial": "شرح",
+    "wordCraftTutorial": "شرح وورد كرافت",
+    "helpOverview": "نظرة عامة على المساعدة",
+    "contactSupport": "التواصل مع الدعم"
+  }
+}
+

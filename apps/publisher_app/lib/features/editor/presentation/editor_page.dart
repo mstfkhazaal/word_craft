@@ -1,185 +1,20 @@
-import 'dart:io';
-
+import 'package:auto_route/auto_route.dart';
 import 'package:book_core/book_core.dart';
-import 'package:book_exporters/book_exporters.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
-import 'package:path/path.dart' as p;
 import 'package:printing/printing.dart';
-class EditorPage extends StatefulWidget {
+import 'package:publisher_app/features/editor/application/book_editor_cubit.dart';
+import 'package:publisher_app/features/editor/application/book_editor_state.dart';
+
+@RoutePage()
+class EditorPage extends StatelessWidget {
   const EditorPage({super.key});
 
-  @override
-  State<EditorPage> createState() => _EditorPageState();
-}
+  Future<void> _previewPdf(BuildContext context) async {
+    final bytes = await context.read<BookEditorCubit>().buildPdfPreview();
 
-class _EditorPageState extends State<EditorPage> {
-  final controller = TextEditingController();
-
-  BookProject? project;
-  BookChapter? selectedChapter;
-  String? openedMarkBookPath;
-  String? workingDirectoryPath;
-
-  final containerService = MarkBookContainerService();
-
-  final creator = BookProjectCreator();
-  final loader = BookProjectLoader();
-  final writer = BookProjectWriter();
-  final exporter = PdfBookExporter();
-
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
-  }
-  Future<void> saveMarkBook() async {
-    final currentProject = project;
-    final currentMarkBookPath = openedMarkBookPath;
-    final currentWorkingDirectory = workingDirectoryPath;
-    final chapter = selectedChapter;
-
-    if (currentProject == null ||
-        currentMarkBookPath == null ||
-        currentWorkingDirectory == null ||
-        chapter == null) {
-      return;
-    }
-
-    await writer.saveChapter(
-      rootPath: currentProject.rootPath,
-      chapterPath: chapter.path,
-      markdown: controller.text,
-    );
-
-    await containerService.packDirectory(
-      sourceDirectoryPath: currentWorkingDirectory,
-      outputFilePath: currentMarkBookPath,
-    );
-
-    final reloadedProject = await loader.load(currentWorkingDirectory);
-
-    setState(() {
-      project = reloadedProject;
-      selectedChapter = reloadedProject.chapters.firstWhere(
-            (item) => item.path == chapter.path,
-      );
-    });
-  }
-  Future<void> openMarkBook({
-    required String markBookPath,
-    required String workspaceRootPath,
-  }) async {
-    final fileName = p.basenameWithoutExtension(markBookPath);
-    final workingRoot = p.join(workspaceRootPath, fileName);
-
-    await containerService.unpackToDirectory(
-      markBookFilePath: markBookPath,
-      destinationDirectoryPath: workingRoot,
-    );
-
-    final loadedProject = await loader.load(workingRoot);
-
-    setState(() {
-      openedMarkBookPath = markBookPath;
-      workingDirectoryPath = workingRoot;
-      project = loadedProject;
-      selectedChapter = loadedProject.chapters.first;
-      controller.text = loadedProject.chapters.first.markdown;
-    });
-  }
-
-  Future<void> createMarkBook({
-    required String parentDirectoryPath,
-    required String title,
-    required String author,
-  }) async {
-    final safeName = title
-        .trim()
-        .toLowerCase()
-        .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
-        .replaceAll(RegExp(r'^-|-$'), '');
-
-    final workingRoot = '$parentDirectoryPath/$safeName';
-    final markBookPath = '$parentDirectoryPath/$title.markbook';
-
-    await creator.create(
-      rootPath: workingRoot,
-      title: title,
-      author: author,
-    );
-
-    await containerService.packDirectory(
-      sourceDirectoryPath: workingRoot,
-      outputFilePath: markBookPath,
-    );
-
-    final loadedProject = await loader.load(workingRoot);
-
-    setState(() {
-      openedMarkBookPath = markBookPath;
-      workingDirectoryPath = workingRoot;
-      project = loadedProject;
-      selectedChapter = loadedProject.chapters.first;
-      controller.text = loadedProject.chapters.first.markdown;
-    });
-  }
-  Future<void> createAndLoadSampleProject(BuildContext context) async {
-    final rootPath = '${Directory.current.path}/sample_book';
-
-    await creator.create(
-      rootPath: rootPath,
-      title: 'My First Book',
-      author: 'Mostafa Khazaal',
-    );
-
-    final loadedProject = await loader.load(rootPath);
-    final firstChapter = loadedProject.chapters.first;
-
-    setState(() {
-      project = loadedProject;
-      selectedChapter = firstChapter;
-      controller.text = firstChapter.markdown;
-    });
-  }
-
-  Future<void> saveChapter() async {
-    final currentProject = project;
-    final chapter = selectedChapter;
-
-    if (currentProject == null || chapter == null) {
-      return;
-    }
-
-    await writer.saveChapter(
-      rootPath: currentProject.rootPath,
-      chapterPath: chapter.path,
-      markdown: controller.text,
-    );
-
-    final reloadedProject = await loader.load(currentProject.rootPath);
-
-    setState(() {
-      project = reloadedProject;
-      selectedChapter = reloadedProject.chapters.firstWhere(
-            (item) => item.path == chapter.path,
-      );
-    });
-  }
-
-  Future<void> previewPdf() async {
-    final currentProject = project;
-
-    if (currentProject == null) {
-      return;
-    }
-
-    await saveChapter();
-
-    final reloadedProject = await loader.load(currentProject.rootPath);
-    final bytes = await exporter.export(reloadedProject);
-
-    if (!mounted) {
+    if (bytes == null || !context.mounted) {
       return;
     }
 
@@ -192,6 +27,7 @@ class _EditorPageState extends State<EditorPage> {
             ),
             body: PdfPreview(
               build: (_) async => bytes,
+              canChangeOrientation: false,
             ),
           );
         },
@@ -201,73 +37,198 @@ class _EditorPageState extends State<EditorPage> {
 
   @override
   Widget build(BuildContext context) {
-    final currentProject = project;
+    return BlocConsumer<BookEditorCubit, BookEditorState>(
+      listener: (context, state) {
+        final error = state.errorMessage;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Markdown Book Publisher'),
-        actions: [
-          TextButton(
-            onPressed: ()=>createAndLoadSampleProject(context),
-            child: const Text('Create Sample'),
-          ),
-          TextButton(
-            onPressed: saveChapter,
-            child: const Text('Save'),
-          ),
-          TextButton(
-            onPressed: previewPdf,
-            child: const Text('Preview PDF'),
-          ),
-        ],
-      ),
-      body: currentProject == null
-          ? const Center(
-        child: Text('Create a sample book project to start.'),
-      )
-          : Row(
-        children: [
-          SizedBox(
-            width: 240,
-            child: ListView(
-              children: [
-                for (final chapter in currentProject.chapters)
-                  ListTile(
-                    title: Text(chapter.title),
-                    selected: chapter.path == selectedChapter?.path,
-                    onTap: () {
-                      setState(() {
-                        selectedChapter = chapter;
-                        controller.text = chapter.markdown;
-                      });
-                    },
-                  ),
-              ],
+        if (error == null) {
+          return;
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error)),
+        );
+      },
+      builder: (context, state) {
+        final project = state.project;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(project?.config.title ?? 'Word Craft'),
+            leading: IconButton(
+              onPressed: () => context.router.maybePop(),
+              icon: const Icon(Icons.arrow_back),
             ),
-          ),
-          const VerticalDivider(width: 1),
-          Expanded(
-            child: TextField(
-              controller: controller,
-              expands: true,
-              maxLines: null,
-              textAlignVertical: TextAlignVertical.top,
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.all(24),
+            actions: [
+              TextButton.icon(
+                onPressed: state.canSave
+                    ? () => context.read<BookEditorCubit>().saveMarkBook()
+                    : null,
+                icon: const Icon(Icons.save_outlined),
+                label: const Text('Save'),
               ),
-              onChanged: (_) => setState(() {}),
-            ),
+              TextButton.icon(
+                onPressed: project == null ? null : () => _previewPdf(context),
+                icon: const Icon(Icons.picture_as_pdf_outlined),
+                label: const Text('Preview PDF'),
+              ),
+              const SizedBox(width: 12),
+            ],
           ),
-          const VerticalDivider(width: 1),
-          Expanded(
-            child: Markdown(
-              data: controller.text,
-              padding: const EdgeInsets.all(24),
-            ),
+          body: project == null
+              ? const Center(
+            child: Text('Open or create a .markbook first.'),
+          )
+              : _EditorLayout(
+            project: project,
+            state: state,
           ),
-        ],
+        );
+      },
+    );
+  }
+}
+
+class _EditorLayout extends StatelessWidget {
+  const _EditorLayout({
+    required this.project,
+    required this.state,
+  });
+
+  final BookProject project;
+  final BookEditorState state;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _ChapterSidebar(
+          chapters: project.chapters,
+          selectedChapter: state.selectedChapter,
+        ),
+        const VerticalDivider(width: 1),
+        const Expanded(
+          child: _MarkdownEditorPane(),
+        ),
+        const VerticalDivider(width: 1),
+        const Expanded(
+          child: _MarkdownPreviewPane(),
+        ),
+      ],
+    );
+  }
+}
+
+class _ChapterSidebar extends StatelessWidget {
+  const _ChapterSidebar({
+    required this.chapters,
+    required this.selectedChapter,
+  });
+
+  final List<BookChapter> chapters;
+  final BookChapter? selectedChapter;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 280,
+      child: Material(
+        color: Theme.of(context).colorScheme.surface,
+        child: ListView(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Text(
+                'Chapters',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            for (final chapter in chapters)
+              ListTile(
+                title: Text(chapter.title),
+                subtitle: Text(chapter.path),
+                selected: chapter.path == selectedChapter?.path,
+                onTap: () {
+                  context.read<BookEditorCubit>().selectChapter(chapter);
+                },
+              ),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+class _MarkdownEditorPane extends StatefulWidget {
+  const _MarkdownEditorPane();
+
+  @override
+  State<_MarkdownEditorPane> createState() => _MarkdownEditorPaneState();
+}
+
+class _MarkdownEditorPaneState extends State<_MarkdownEditorPane> {
+  final controller = TextEditingController();
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<BookEditorCubit, BookEditorState>(
+      listenWhen: (previous, current) {
+        return previous.selectedChapter?.path != current.selectedChapter?.path ||
+            previous.markdownDraft != current.markdownDraft;
+      },
+      listener: (context, state) {
+        if (controller.text == state.markdownDraft) {
+          return;
+        }
+
+        controller.value = TextEditingValue(
+          text: state.markdownDraft,
+          selection: TextSelection.collapsed(
+            offset: state.markdownDraft.length,
+          ),
+        );
+      },
+      child: TextField(
+        controller: controller,
+        expands: true,
+        maxLines: null,
+        textAlignVertical: TextAlignVertical.top,
+        style: const TextStyle(
+          fontFamily: 'monospace',
+          fontSize: 14,
+          height: 1.55,
+        ),
+        decoration: const InputDecoration(
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.all(24),
+          hintText: 'Write Markdown...',
+        ),
+        onChanged: context.read<BookEditorCubit>().updateMarkdownDraft,
+      ),
+    );
+  }
+}
+
+class _MarkdownPreviewPane extends StatelessWidget {
+  const _MarkdownPreviewPane();
+
+  @override
+  Widget build(BuildContext context) {
+
+    return BlocBuilder<BookEditorCubit, BookEditorState>(
+      builder: (context, state) {
+        return Markdown(
+          data: state.markdownDraft,
+          padding: const EdgeInsets.all(32),
+        );
+      },
     );
   }
 }

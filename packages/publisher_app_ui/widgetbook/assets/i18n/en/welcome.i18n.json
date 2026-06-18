@@ -1,0 +1,29 @@
+{
+  "title": "Welcome to Publisher POS",
+  "description": "Run sales, inventory, and reports from one fast offline-first workspace.",
+  "footer": "Optimized for mobile, tablet, desktop, LTR, and RTL.",
+  "actions": {
+    "getStarted": "Get started",
+    "signIn": "Sign in"
+  },
+  "slider": {
+    "indicatorSemanticLabel": "Welcome slider page indicator"
+  },
+  "slides": {
+    "sales": {
+      "title": "Fast checkout",
+      "description": "Create orders quickly with a clean POS flow.",
+      "semanticLabel": "Point of sale checkout illustration"
+    },
+    "inventory": {
+      "title": "Inventory control",
+      "description": "Track products, stock, and daily movement.",
+      "semanticLabel": "Inventory management illustration"
+    },
+    "reports": {
+      "title": "Business reports",
+      "description": "Understand sales and performance at a glance.",
+      "semanticLabel": "Business analytics illustration"
+    }
+  }
+}

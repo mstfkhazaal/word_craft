@@ -1,0 +1,118 @@
+{
+  "app": {
+    "label": "Word Craft",
+    "about": "About Word Craft",
+    "checkForUpdates": "Check For Updates…",
+    "settings": "Settings…"
+  },
+  "file": {
+    "label": "File",
+    "newBook": "New Book",
+    "newBookSet": "New Book Set…",
+    "open": "Open…",
+    "openRecent": "Open Recent",
+    "noRecentBooks": "No Recent Books",
+    "clearRecents": "Clear Recents",
+    "importWordFile": "Import Word File…",
+    "close": "Close",
+    "save": "Save",
+    "duplicate": "Duplicate",
+    "rename": "Rename…",
+    "moveTo": "Move To…",
+    "revertTo": "Revert To",
+    "lastSavedVersion": "Last Saved Version",
+    "share": "Share",
+    "shareMarkBook": "Share MarkBook…",
+    "reimportWordFile": "Reimport Word File…",
+    "reuseElementsFrom": "Reuse Elements From",
+    "otherMarkBook": "Other MarkBook…",
+    "reuseSummary": "Reuse Summary…",
+    "generateBooks": "Generate Books…",
+    "exportContentAs": "Export Content As",
+    "exportMarkdownFiles": "Markdown Files…",
+    "exportHtml": "HTML…",
+    "exportWordFile": "Word File…",
+    "exportRichTextFormat": "Rich Text Format…",
+    "selectPlatforms": "Select Platforms…",
+    "printSettings": "Print Settings…"
+  },
+  "edit": {
+    "label": "Edit",
+    "undo": "Undo",
+    "redo": "Redo",
+    "cut": "Cut",
+    "copy": "Copy",
+    "paste": "Paste",
+    "pasteAndMatchStyle": "Paste and Match Style",
+    "delete": "Delete",
+    "selectAll": "Select All",
+    "find": {
+      "label": "Find",
+      "find": "Find…",
+      "findAndReplace": "Find and Replace…",
+      "findSpecial": "Find Special…",
+      "findNext": "Find Next",
+      "findPrevious": "Find Previous",
+      "useSelectionForFind": "Use Selection For Find",
+      "jumpToSelection": "Jump to Selection"
+    },
+    "spellingAndGrammar": {
+      "label": "Spelling and Grammar",
+      "show": "Show Spelling and Grammar",
+      "checkDocumentNow": "Check Document Now",
+      "checkSpellingWhileTyping": "Check Spelling While Typing",
+      "checkGrammarWithSpelling": "Check Grammar With Spelling",
+      "correctSpellingAutomatically": "Correct Spelling Automatically"
+    },
+    "substitutions": "Substitutions",
+    "transformations": "Transformations",
+    "speech": "Speech",
+    "specialCharacters": "Special Characters…"
+  },
+  "view": {
+    "label": "View",
+    "showSidebar": "Show Sidebar",
+    "showInspector": "Show Inspector",
+    "showPreview": "Show Preview",
+    "enterFullScreen": "Enter Full Screen"
+  },
+  "text": {
+    "label": "Text",
+    "chapterTitle": "Chapter Title",
+    "heading": "Heading",
+    "subheading": "Subheading",
+    "bodyText": "Body Text",
+    "blockQuote": "Block Quote",
+    "codeBlock": "Code Block",
+    "pageBreak": "Page Break"
+  },
+  "format": {
+    "label": "Format",
+    "bold": "Bold",
+    "italic": "Italic",
+    "underline": "Underline",
+    "smallCaps": "Small Caps",
+    "sansSerif": "Sans Serif",
+    "monospace": "Monospace",
+    "superscript": "Superscript",
+    "subscript": "Subscript",
+    "strikethrough": "Strikethrough"
+  },
+  "preview": {
+    "label": "Preview",
+    "previewPdf": "Preview PDF",
+    "previewEpub": "Preview EPUB",
+    "previewHtml": "Preview HTML"
+  },
+  "window": {
+    "label": "Window"
+  },
+  "help": {
+    "label": "Help",
+    "tutorial": "Tutorial",
+    "wordCraftTutorial": "Word Craft Tutorial",
+    "helpOverview": "Help Overview",
+    "contactSupport": "Contact Support"
+  }
+}
+

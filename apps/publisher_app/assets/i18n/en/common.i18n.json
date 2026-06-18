@@ -1,0 +1,14 @@
+{
+  "cancel": "Cancel",
+  "create": "Create",
+  "open": "Open",
+  "save": "Save",
+  "close": "Close",
+  "delete": "Delete",
+  "rename": "Rename",
+  "duplicate": "Duplicate",
+  "settings": "Settings",
+  "settingsWithEllipsis": "Settings…",
+  "noDocument": "No Document",
+  "notAvailable": "Not Available"
+}

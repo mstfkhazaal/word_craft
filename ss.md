@@ -1,45 +1,17 @@
-Your next step is **not PDF/EPUB yet**. First build the foundation: the app must create, load, edit, and save a local book project folder.
+Yes. Do it this way:
 
-Very Good Core is already a good choice because it gives you a scalable Flutter app base with Bloc, testing, linting, flavors, and CI. The docs describe the Core template as a multi-platform Flutter starter with folder-by-feature architecture and Bloc-based separation between UI and business logic. ([Very Good CLI][1])
+1. **AutoRoute** for navigation.
+2. **Cubit** for open/save/create/publish state.
+3. **No use cases now**. Use services directly inside Cubit. That is enough for this stage.
+4. First page should be a **Welcome / Recent Files** page like Vellum.
 
-## Target structure now
+Your current `App` still uses `MaterialApp` with `home: const EditorPage()` , and your current `EditorPage` owns too much state directly with `setState`, file services, exporter, and `.markbook` paths inside the widget . Move that logic to a Cubit. Keep your existing `MarkBookContainerService`; it already packs/unpacks `.markbook` and validates `markbook.json` / `book.config.json` .
 
-You have:
-
-```txt
-apps/
-  publisher_app/
-
-packages/
-  book_core/
-  book_exporters/
-```
-
-Now make them work together like this:
-
-```txt
-publisher_app
-  uses book_core
-  uses book_exporters
-
-book_core
-  owns models
-  owns config parser
-  owns project file creation/loading/saving
-  owns validation
-
-book_exporters
-  owns PDF exporter
-  owns HTML exporter
-  owns EPUB exporter later
-  depends on book_core
-```
-
-The `pdf` package is a good fit for `book_exporters` because it creates PDF files for Dart and Flutter and includes a Flutter-like widget system for multi-page PDF generation. ([Dart packages][2])
+AutoRoute is a good fit because it generates strongly typed route objects and is wired through `MaterialApp.router` with `routerConfig: _appRouter.config()` after generation. ([Dart packages][1]) Flutter Bloc’s `BlocProvider` is the right place to create and provide your Cubit, and it closes blocs automatically when it creates them. ([Dart packages][2]) For macOS file picking, `file_picker` supports directory picking, custom extensions, and save dialogs, including `getDirectoryPath()` and `saveFile()`. ([Dart packages][3])
 
 ---
 
-# Step 1: connect packages to Flutter app
+## 1. Add dependencies
 
 In:
 
@@ -51,323 +23,107 @@ add:
 
 ```yaml
 dependencies:
-  book_core:
-    path: ../../packages/book_core
-  book_exporters:
-    path: ../../packages/book_exporters
+  auto_route: ^11.1.0
+  flutter_bloc: ^9.1.1
+  file_picker: ^10.3.7
+  path_provider: ^2.1.5
+  path: ^1.9.1
+
+dev_dependencies:
+  auto_route_generator: ^11.0.0
+  build_runner: ^2.4.15
 ```
 
-In:
-
-```txt
-packages/book_exporters/pubspec.yaml
-```
-
-add:
-
-```yaml
-dependencies:
-  book_core:
-    path: ../book_core
-  markdown: ^7.3.0
-  pdf: ^3.13.0
-```
-
-In:
-
-```txt
-apps/publisher_app/pubspec.yaml
-```
-
-also add UI/export dependencies:
-
-```yaml
-dependencies:
-  file_picker: ^10.0.0
-  flutter_markdown_plus: ^1.0.4
-  printing: ^5.14.2
-```
-
-`flutter_markdown_plus` is the package I would use for the live Markdown preview UI. `printing` is useful later for previewing, printing, and sharing PDFs from Flutter. ([Dart packages][3])
-
-Run from repo root or each package:
+Run:
 
 ```bash
+cd apps/publisher_app
 flutter pub get
 ```
 
 ---
 
-# Step 2: build `book_core` first
+## 2. Add AutoRoute
 
-Create this structure:
+Create:
 
 ```txt
-packages/book_core/lib/
-  book_core.dart
-  src/
-    models/
-      book_config.dart
-      book_chapter.dart
-      book_project.dart
-      book_theme_config.dart
-    services/
-      book_project_creator.dart
-      book_project_loader.dart
-      book_project_writer.dart
-      book_project_validator.dart
+apps/publisher_app/lib/app/router/app_router.dart
 ```
 
-## `packages/book_core/lib/book_core.dart`
-
 ```dart
-export 'src/models/book_chapter.dart';
-export 'src/models/book_config.dart';
-export 'src/models/book_project.dart';
-export 'src/models/book_theme_config.dart';
-export 'src/services/book_project_creator.dart';
-export 'src/services/book_project_loader.dart';
-export 'src/services/book_project_validator.dart';
-export 'src/services/book_project_writer.dart';
-```
+import 'package:auto_route/auto_route.dart';
+import 'package:publisher_app/features/editor/presentation/editor_page.dart';
+import 'package:publisher_app/features/welcome/presentation/welcome_page.dart';
 
-## `packages/book_core/lib/src/models/book_theme_config.dart`
+part 'app_router.gr.dart';
 
-```dart
-class BookThemeConfig {
-  const BookThemeConfig({
-    required this.pageSize,
-    required this.fontFamily,
-    required this.fontSize,
-    required this.lineHeight,
-    required this.pageMargin,
-    required this.primaryColor,
-    required this.textColor,
-    required this.backgroundColor,
-    required this.headingColor,
-  });
+@AutoRouterConfig(replaceInRouteName: 'Page,Route')
+class AppRouter extends RootStackRouter {
+  @override
+  RouteType get defaultRouteType => const RouteType.adaptive();
 
-  factory BookThemeConfig.fromJson(Map<String, dynamic> json) {
-    return BookThemeConfig(
-      pageSize: json['pageSize'] as String? ?? 'a4',
-      fontFamily: json['fontFamily'] as String? ?? 'serif',
-      fontSize: (json['fontSize'] as num? ?? 13).toDouble(),
-      lineHeight: (json['lineHeight'] as num? ?? 1.55).toDouble(),
-      pageMargin: (json['pageMargin'] as num? ?? 48).toDouble(),
-      primaryColor: json['primaryColor'] as String? ?? '#1E293B',
-      textColor: json['textColor'] as String? ?? '#111827',
-      backgroundColor: json['backgroundColor'] as String? ?? '#FFFFFF',
-      headingColor: json['headingColor'] as String? ?? '#0F172A',
-    );
-  }
-
-  final String pageSize;
-  final String fontFamily;
-  final double fontSize;
-  final double lineHeight;
-  final double pageMargin;
-  final String primaryColor;
-  final String textColor;
-  final String backgroundColor;
-  final String headingColor;
-
-  Map<String, dynamic> toJson() {
-    return {
-      'pageSize': pageSize,
-      'fontFamily': fontFamily,
-      'fontSize': fontSize,
-      'lineHeight': lineHeight,
-      'pageMargin': pageMargin,
-      'primaryColor': primaryColor,
-      'textColor': textColor,
-      'backgroundColor': backgroundColor,
-      'headingColor': headingColor,
-    };
-  }
-
-  BookThemeConfig copyWith({
-    String? pageSize,
-    String? fontFamily,
-    double? fontSize,
-    double? lineHeight,
-    double? pageMargin,
-    String? primaryColor,
-    String? textColor,
-    String? backgroundColor,
-    String? headingColor,
-  }) {
-    return BookThemeConfig(
-      pageSize: pageSize ?? this.pageSize,
-      fontFamily: fontFamily ?? this.fontFamily,
-      fontSize: fontSize ?? this.fontSize,
-      lineHeight: lineHeight ?? this.lineHeight,
-      pageMargin: pageMargin ?? this.pageMargin,
-      primaryColor: primaryColor ?? this.primaryColor,
-      textColor: textColor ?? this.textColor,
-      backgroundColor: backgroundColor ?? this.backgroundColor,
-      headingColor: headingColor ?? this.headingColor,
-    );
-  }
-}
-```
-
-## `packages/book_core/lib/src/models/book_chapter.dart`
-
-```dart
-class BookChapter {
-  const BookChapter({
-    required this.title,
-    required this.path,
-    required this.order,
-    required this.markdown,
-  });
-
-  factory BookChapter.fromJson(Map<String, dynamic> json) {
-    return BookChapter(
-      title: json['title'] as String,
-      path: json['path'] as String,
-      order: json['order'] as int,
-      markdown: json['markdown'] as String? ?? '',
-    );
-  }
-
-  final String title;
-  final String path;
-  final int order;
-  final String markdown;
-
-  Map<String, dynamic> toConfigJson() {
-    return {
-      'title': title,
-      'path': path,
-      'order': order,
-    };
-  }
-
-  BookChapter copyWith({
-    String? title,
-    String? path,
-    int? order,
-    String? markdown,
-  }) {
-    return BookChapter(
-      title: title ?? this.title,
-      path: path ?? this.path,
-      order: order ?? this.order,
-      markdown: markdown ?? this.markdown,
-    );
-  }
-}
-```
-
-## `packages/book_core/lib/src/models/book_config.dart`
-
-```dart
-import 'book_chapter.dart';
-import 'book_theme_config.dart';
-
-class BookConfig {
-  const BookConfig({
-    required this.title,
-    required this.author,
-    required this.language,
-    required this.description,
-    required this.coverImagePath,
-    required this.theme,
-    required this.chapters,
-  });
-
-  factory BookConfig.fromJson(Map<String, dynamic> json) {
-    final chaptersJson = json['chapters'] as List<dynamic>? ?? [];
-
-    return BookConfig(
-      title: json['title'] as String? ?? 'Untitled Book',
-      author: json['author'] as String? ?? 'Unknown Author',
-      language: json['language'] as String? ?? 'en',
-      description: json['description'] as String? ?? '',
-      coverImagePath: json['coverImagePath'] as String?,
-      theme: BookThemeConfig.fromJson(
-        Map<String, dynamic>.from(json['theme'] as Map? ?? {}),
+  @override
+  List<AutoRoute> get routes {
+    return [
+      AutoRoute(
+        page: WelcomeRoute.page,
+        path: '/',
+        initial: true,
       ),
-      chapters: chaptersJson
-          .map(
-            (chapter) => BookChapter.fromJson(
-              Map<String, dynamic>.from(chapter as Map),
-            ),
-          )
-          .toList()
-        ..sort((a, b) => a.order.compareTo(b.order)),
-    );
-  }
-
-  final String title;
-  final String author;
-  final String language;
-  final String description;
-  final String? coverImagePath;
-  final BookThemeConfig theme;
-  final List<BookChapter> chapters;
-
-  Map<String, dynamic> toJson() {
-    return {
-      'title': title,
-      'author': author,
-      'language': language,
-      'description': description,
-      'coverImagePath': coverImagePath,
-      'theme': theme.toJson(),
-      'chapters': chapters.map((chapter) => chapter.toConfigJson()).toList(),
-    };
-  }
-
-  BookConfig copyWith({
-    String? title,
-    String? author,
-    String? language,
-    String? description,
-    String? coverImagePath,
-    BookThemeConfig? theme,
-    List<BookChapter>? chapters,
-  }) {
-    return BookConfig(
-      title: title ?? this.title,
-      author: author ?? this.author,
-      language: language ?? this.language,
-      description: description ?? this.description,
-      coverImagePath: coverImagePath ?? this.coverImagePath,
-      theme: theme ?? this.theme,
-      chapters: chapters ?? this.chapters,
-    );
+      AutoRoute(
+        page: EditorRoute.page,
+        path: '/editor',
+      ),
+    ];
   }
 }
 ```
 
-## `packages/book_core/lib/src/models/book_project.dart`
+Then generate routes:
+
+```bash
+dart run build_runner build --delete-conflicting-outputs
+```
+
+---
+
+## 3. Replace `App`
+
+Replace:
+
+```txt
+apps/publisher_app/lib/app/view/app.dart
+```
+
+with:
 
 ```dart
-import 'book_chapter.dart';
-import 'book_config.dart';
+import 'package:flutter/material.dart';
+import 'package:publisher_app/app/router/app_router.dart';
 
-class BookProject {
-  const BookProject({
-    required this.rootPath,
-    required this.config,
-    required this.chapters,
-  });
+class App extends StatefulWidget {
+  const App({super.key});
 
-  final String rootPath;
-  final BookConfig config;
-  final List<BookChapter> chapters;
+  @override
+  State<App> createState() => _AppState();
+}
 
-  BookProject copyWith({
-    String? rootPath,
-    BookConfig? config,
-    List<BookChapter>? chapters,
-  }) {
-    return BookProject(
-      rootPath: rootPath ?? this.rootPath,
-      config: config ?? this.config,
-      chapters: chapters ?? this.chapters,
+class _AppState extends State<App> {
+  final AppRouter _appRouter = AppRouter();
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      title: 'Word Craft',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        colorSchemeSeed: const Color(0xFFC77DFF),
+        fontFamily: '.SF Pro Display',
+      ),
+      routerConfig: _appRouter.config(),
     );
   }
 }
@@ -375,578 +131,1122 @@ class BookProject {
 
 ---
 
-# Step 3: add project creation/loading/saving
+## 4. Add editor state
 
-## `packages/book_core/lib/src/services/book_project_creator.dart`
+Create:
 
-```dart
-import 'dart:convert';
-import 'dart:io';
-
-class BookProjectCreator {
-  Future<void> create({
-    required String rootPath,
-    required String title,
-    required String author,
-  }) async {
-    final root = Directory(rootPath);
-    final chaptersDirectory = Directory('$rootPath/chapters');
-    final assetsDirectory = Directory('$rootPath/assets');
-    final imagesDirectory = Directory('$rootPath/assets/images');
-    final outputDirectory = Directory('$rootPath/output');
-
-    await root.create(recursive: true);
-    await chaptersDirectory.create(recursive: true);
-    await assetsDirectory.create(recursive: true);
-    await imagesDirectory.create(recursive: true);
-    await outputDirectory.create(recursive: true);
-
-    final config = {
-      'title': title,
-      'author': author,
-      'language': 'en',
-      'description': 'A beautiful book generated from Markdown.',
-      'coverImagePath': null,
-      'theme': {
-        'pageSize': 'a4',
-        'fontFamily': 'serif',
-        'fontSize': 13,
-        'lineHeight': 1.55,
-        'pageMargin': 48,
-        'primaryColor': '#1E293B',
-        'textColor': '#111827',
-        'backgroundColor': '#FFFFFF',
-        'headingColor': '#0F172A',
-      },
-      'chapters': [
-        {
-          'title': 'Introduction',
-          'path': 'chapters/01-introduction.md',
-          'order': 1,
-        },
-      ],
-    };
-
-    const markdown = '''
-# Introduction
-
-Welcome to your new book.
-
-This book is written in **Markdown**.
-
-## Start writing
-
-Edit this chapter and preview your changes live.
-''';
-
-    await File('$rootPath/book.config.json').writeAsString(
-      const JsonEncoder.withIndent('  ').convert(config),
-    );
-
-    await File('$rootPath/chapters/01-introduction.md').writeAsString(markdown);
-  }
-}
+```txt
+apps/publisher_app/lib/features/editor/application/book_editor_state.dart
 ```
-
-## `packages/book_core/lib/src/services/book_project_loader.dart`
-
-```dart
-import 'dart:convert';
-import 'dart:io';
-
-import '../models/book_chapter.dart';
-import '../models/book_config.dart';
-import '../models/book_project.dart';
-
-class BookProjectLoader {
-  Future<BookProject> load(String rootPath) async {
-    final configFile = File('$rootPath/book.config.json');
-
-    if (!await configFile.exists()) {
-      throw const FormatException('book.config.json was not found.');
-    }
-
-    final decoded = jsonDecode(await configFile.readAsString());
-
-    if (decoded is! Map<String, dynamic>) {
-      throw const FormatException('book.config.json must contain an object.');
-    }
-
-    final config = BookConfig.fromJson(decoded);
-    final chapters = <BookChapter>[];
-
-    for (final chapter in config.chapters) {
-      final chapterFile = File('$rootPath/${chapter.path}');
-
-      if (!await chapterFile.exists()) {
-        throw FormatException('Chapter file was not found: ${chapter.path}');
-      }
-
-      chapters.add(
-        chapter.copyWith(
-          markdown: await chapterFile.readAsString(),
-        ),
-      );
-    }
-
-    return BookProject(
-      rootPath: rootPath,
-      config: config,
-      chapters: chapters,
-    );
-  }
-}
-```
-
-## `packages/book_core/lib/src/services/book_project_writer.dart`
-
-```dart
-import 'dart:convert';
-import 'dart:io';
-
-import '../models/book_config.dart';
-
-class BookProjectWriter {
-  Future<void> saveConfig({
-    required String rootPath,
-    required BookConfig config,
-  }) async {
-    final file = File('$rootPath/book.config.json');
-
-    await file.writeAsString(
-      const JsonEncoder.withIndent('  ').convert(config.toJson()),
-    );
-  }
-
-  Future<void> saveChapter({
-    required String rootPath,
-    required String chapterPath,
-    required String markdown,
-  }) async {
-    final file = File('$rootPath/$chapterPath');
-
-    if (!await file.exists()) {
-      throw FormatException('Chapter file was not found: $chapterPath');
-    }
-
-    await file.writeAsString(markdown);
-  }
-}
-```
-
-## `packages/book_core/lib/src/services/book_project_validator.dart`
-
-```dart
-import 'dart:io';
-
-import '../models/book_project.dart';
-
-class BookProjectValidator {
-  Future<List<String>> validate(BookProject project) async {
-    final errors = <String>[];
-
-    if (project.config.title.trim().isEmpty) {
-      errors.add('Book title is required.');
-    }
-
-    if (project.config.author.trim().isEmpty) {
-      errors.add('Book author is required.');
-    }
-
-    if (project.chapters.isEmpty) {
-      errors.add('At least one chapter is required.');
-    }
-
-    for (final chapter in project.chapters) {
-      final file = File('${project.rootPath}/${chapter.path}');
-
-      if (!await file.exists()) {
-        errors.add('Missing chapter file: ${chapter.path}');
-      }
-
-      if (chapter.markdown.trim().isEmpty) {
-        errors.add('Empty chapter: ${chapter.title}');
-      }
-    }
-
-    return errors;
-  }
-}
-```
-
----
-
-# Step 4: make `book_exporters`
-
-Start with PDF only. Add EPUB after the book flow is stable.
-
-## `packages/book_exporters/lib/book_exporters.dart`
-
-```dart
-export 'src/pdf/pdf_book_exporter.dart';
-```
-
-## `packages/book_exporters/lib/src/pdf/pdf_book_exporter.dart`
 
 ```dart
 import 'dart:typed_data';
 
 import 'package:book_core/book_core.dart';
-import 'package:markdown/markdown.dart' as md;
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
 
-class PdfBookExporter {
-  Future<Uint8List> export(BookProject project) async {
-    final pdf = pw.Document(
-      title: project.config.title,
-      author: project.config.author,
-      creator: 'Markdown Book Publisher',
+enum BookEditorStatus {
+  initial,
+  loading,
+  ready,
+  saving,
+  exporting,
+  failure,
+}
+
+class RecentMarkBook {
+  const RecentMarkBook({
+    required this.title,
+    required this.filePath,
+    required this.directoryPath,
+    this.coverImagePath,
+  });
+
+  final String title;
+  final String filePath;
+  final String directoryPath;
+  final String? coverImagePath;
+}
+
+class BookEditorState {
+  const BookEditorState({
+    required this.status,
+    required this.recentFiles,
+    this.project,
+    this.selectedChapter,
+    this.openedMarkBookPath,
+    this.workingDirectoryPath,
+    this.markdownDraft = '',
+    this.errorMessage,
+    this.pdfPreviewBytes,
+  });
+
+  const BookEditorState.initial()
+      : status = BookEditorStatus.initial,
+        recentFiles = const [],
+        project = null,
+        selectedChapter = null,
+        openedMarkBookPath = null,
+        workingDirectoryPath = null,
+        markdownDraft = '',
+        errorMessage = null,
+        pdfPreviewBytes = null;
+
+  final BookEditorStatus status;
+  final List<RecentMarkBook> recentFiles;
+  final BookProject? project;
+  final BookChapter? selectedChapter;
+  final String? openedMarkBookPath;
+  final String? workingDirectoryPath;
+  final String markdownDraft;
+  final String? errorMessage;
+  final Uint8List? pdfPreviewBytes;
+
+  bool get hasProject => project != null;
+
+  bool get canSave {
+    return project != null &&
+        selectedChapter != null &&
+        openedMarkBookPath != null &&
+        workingDirectoryPath != null;
+  }
+
+  BookEditorState copyWith({
+    BookEditorStatus? status,
+    List<RecentMarkBook>? recentFiles,
+    BookProject? project,
+    BookChapter? selectedChapter,
+    String? openedMarkBookPath,
+    String? workingDirectoryPath,
+    String? markdownDraft,
+    String? errorMessage,
+    Uint8List? pdfPreviewBytes,
+    bool clearError = false,
+    bool clearPdfPreview = false,
+  }) {
+    return BookEditorState(
+      status: status ?? this.status,
+      recentFiles: recentFiles ?? this.recentFiles,
+      project: project ?? this.project,
+      selectedChapter: selectedChapter ?? this.selectedChapter,
+      openedMarkBookPath: openedMarkBookPath ?? this.openedMarkBookPath,
+      workingDirectoryPath: workingDirectoryPath ?? this.workingDirectoryPath,
+      markdownDraft: markdownDraft ?? this.markdownDraft,
+      errorMessage: clearError ? null : errorMessage ?? this.errorMessage,
+      pdfPreviewBytes:
+          clearPdfPreview ? null : pdfPreviewBytes ?? this.pdfPreviewBytes,
     );
+  }
+}
+```
 
-    pdf.addPage(
-      pw.MultiPage(
-        pageFormat: _pageFormat(project.config.theme.pageSize).copyWith(
-          marginLeft: project.config.theme.pageMargin,
-          marginTop: project.config.theme.pageMargin,
-          marginRight: project.config.theme.pageMargin,
-          marginBottom: project.config.theme.pageMargin,
-        ),
-        build: (_) {
-          return [
-            _cover(project),
-            pw.NewPage(),
-            _toc(project),
-            pw.NewPage(),
-            for (final chapter in project.chapters) ...[
-              pw.Header(
-                level: 0,
-                child: pw.Text(chapter.title),
-              ),
-              ..._markdownToPdf(chapter.markdown, project.config.theme),
-              pw.NewPage(),
-            ],
-          ];
-        },
+---
+
+## 5. Add editor Cubit
+
+Create:
+
+```txt
+apps/publisher_app/lib/features/editor/application/book_editor_cubit.dart
+```
+
+```dart
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:bloc/bloc.dart';
+import 'package:book_core/book_core.dart';
+import 'package:book_exporters/book_exporters.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
+import 'package:publisher_app/features/editor/application/book_editor_state.dart';
+
+class BookEditorCubit extends Cubit<BookEditorState> {
+  BookEditorCubit({
+    BookProjectCreator? creator,
+    BookProjectLoader? loader,
+    BookProjectWriter? writer,
+    MarkBookContainerService? containerService,
+    PdfBookExporter? pdfExporter,
+  })  : _creator = creator ?? BookProjectCreator(),
+        _loader = loader ?? BookProjectLoader(),
+        _writer = writer ?? BookProjectWriter(),
+        _containerService = containerService ?? MarkBookContainerService(),
+        _pdfExporter = pdfExporter ?? PdfBookExporter(),
+        super(const BookEditorState.initial());
+
+  final BookProjectCreator _creator;
+  final BookProjectLoader _loader;
+  final BookProjectWriter _writer;
+  final MarkBookContainerService _containerService;
+  final PdfBookExporter _pdfExporter;
+
+  Future<void> createMarkBook({
+    required String parentDirectoryPath,
+    required String title,
+    required String author,
+  }) async {
+    emit(
+      state.copyWith(
+        status: BookEditorStatus.loading,
+        clearError: true,
+        clearPdfPreview: true,
       ),
     );
 
-    return pdf.save();
-  }
+    try {
+      final safeName = _slugify(title);
+      final workingRoot = p.join(parentDirectoryPath, safeName);
+      final markBookPath = p.join(parentDirectoryPath, '$title.markbook');
 
-  PdfPageFormat _pageFormat(String pageSize) {
-    return switch (pageSize.toLowerCase()) {
-      'a5' => PdfPageFormat.a5,
-      'letter' => PdfPageFormat.letter,
-      _ => PdfPageFormat.a4,
-    };
-  }
+      await _creator.create(
+        rootPath: workingRoot,
+        title: title,
+        author: author,
+      );
 
-  pw.Widget _cover(BookProject project) {
-    return pw.Center(
-      child: pw.Column(
-        mainAxisAlignment: pw.MainAxisAlignment.center,
-        children: [
-          pw.Text(
-            project.config.title,
-            textAlign: pw.TextAlign.center,
-            style: pw.TextStyle(
-              fontSize: 32,
-              fontWeight: pw.FontWeight.bold,
+      await _containerService.packDirectory(
+        sourceDirectoryPath: workingRoot,
+        outputFilePath: markBookPath,
+      );
+
+      final loadedProject = await _loader.load(workingRoot);
+      final firstChapter = loadedProject.chapters.first;
+
+      emit(
+        state.copyWith(
+          status: BookEditorStatus.ready,
+          project: loadedProject,
+          selectedChapter: firstChapter,
+          openedMarkBookPath: markBookPath,
+          workingDirectoryPath: workingRoot,
+          markdownDraft: firstChapter.markdown,
+          recentFiles: _upsertRecentFile(
+            RecentMarkBook(
+              title: loadedProject.config.title,
+              filePath: markBookPath,
+              directoryPath: p.dirname(markBookPath),
+              coverImagePath: loadedProject.config.coverImagePath,
             ),
           ),
-          pw.SizedBox(height: 20),
-          pw.Text(
-            project.config.author,
-            style: const pw.TextStyle(fontSize: 16),
+        ),
+      );
+    } catch (error) {
+      emit(
+        state.copyWith(
+          status: BookEditorStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
+    }
+  }
+
+  Future<void> openMarkBook(String markBookPath) async {
+    emit(
+      state.copyWith(
+        status: BookEditorStatus.loading,
+        clearError: true,
+        clearPdfPreview: true,
+      ),
+    );
+
+    try {
+      final workspaceRoot = await _workspaceRootPath();
+      final fileName = p.basenameWithoutExtension(markBookPath);
+      final workingRoot = p.join(workspaceRoot, fileName);
+
+      await _containerService.unpackToDirectory(
+        markBookFilePath: markBookPath,
+        destinationDirectoryPath: workingRoot,
+      );
+
+      final loadedProject = await _loader.load(workingRoot);
+      final firstChapter = loadedProject.chapters.first;
+
+      emit(
+        state.copyWith(
+          status: BookEditorStatus.ready,
+          project: loadedProject,
+          selectedChapter: firstChapter,
+          openedMarkBookPath: markBookPath,
+          workingDirectoryPath: workingRoot,
+          markdownDraft: firstChapter.markdown,
+          recentFiles: _upsertRecentFile(
+            RecentMarkBook(
+              title: loadedProject.config.title,
+              filePath: markBookPath,
+              directoryPath: p.dirname(markBookPath),
+              coverImagePath: loadedProject.config.coverImagePath,
+            ),
           ),
-          pw.SizedBox(height: 40),
-          pw.Text(
-            project.config.description,
-            textAlign: pw.TextAlign.center,
+        ),
+      );
+    } catch (error) {
+      emit(
+        state.copyWith(
+          status: BookEditorStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
+    }
+  }
+
+  void selectChapter(BookChapter chapter) {
+    emit(
+      state.copyWith(
+        selectedChapter: chapter,
+        markdownDraft: chapter.markdown,
+        clearPdfPreview: true,
+      ),
+    );
+  }
+
+  void updateMarkdownDraft(String value) {
+    emit(state.copyWith(markdownDraft: value));
+  }
+
+  Future<void> saveMarkBook() async {
+    final project = state.project;
+    final selectedChapter = state.selectedChapter;
+    final openedMarkBookPath = state.openedMarkBookPath;
+    final workingDirectoryPath = state.workingDirectoryPath;
+
+    if (project == null ||
+        selectedChapter == null ||
+        openedMarkBookPath == null ||
+        workingDirectoryPath == null) {
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        status: BookEditorStatus.saving,
+        clearError: true,
+      ),
+    );
+
+    try {
+      await _writer.saveChapter(
+        rootPath: project.rootPath,
+        chapterPath: selectedChapter.path,
+        markdown: state.markdownDraft,
+      );
+
+      await _containerService.packDirectory(
+        sourceDirectoryPath: workingDirectoryPath,
+        outputFilePath: openedMarkBookPath,
+      );
+
+      final reloadedProject = await _loader.load(workingDirectoryPath);
+      final reloadedChapter = reloadedProject.chapters.firstWhere(
+        (chapter) => chapter.path == selectedChapter.path,
+      );
+
+      emit(
+        state.copyWith(
+          status: BookEditorStatus.ready,
+          project: reloadedProject,
+          selectedChapter: reloadedChapter,
+          markdownDraft: reloadedChapter.markdown,
+        ),
+      );
+    } catch (error) {
+      emit(
+        state.copyWith(
+          status: BookEditorStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
+    }
+  }
+
+  Future<Uint8List?> buildPdfPreview() async {
+    final project = state.project;
+
+    if (project == null) {
+      return null;
+    }
+
+    emit(
+      state.copyWith(
+        status: BookEditorStatus.exporting,
+        clearError: true,
+        clearPdfPreview: true,
+      ),
+    );
+
+    try {
+      await saveMarkBook();
+
+      final workingDirectoryPath = state.workingDirectoryPath;
+      if (workingDirectoryPath == null) {
+        return null;
+      }
+
+      final reloadedProject = await _loader.load(workingDirectoryPath);
+      final bytes = await _pdfExporter.export(reloadedProject);
+
+      emit(
+        state.copyWith(
+          status: BookEditorStatus.ready,
+          pdfPreviewBytes: bytes,
+        ),
+      );
+
+      return bytes;
+    } catch (error) {
+      emit(
+        state.copyWith(
+          status: BookEditorStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
+
+      return null;
+    }
+  }
+
+  List<RecentMarkBook> _upsertRecentFile(RecentMarkBook item) {
+    return [
+      item,
+      ...state.recentFiles.where((recent) => recent.filePath != item.filePath),
+    ];
+  }
+
+  Future<String> _workspaceRootPath() async {
+    final supportDirectory = await getApplicationSupportDirectory();
+    final workspaceDirectory = Directory(
+      p.join(supportDirectory.path, 'markbook_workspaces'),
+    );
+
+    await workspaceDirectory.create(recursive: true);
+
+    return workspaceDirectory.path;
+  }
+
+  String _slugify(String value) {
+    final slug = value
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9]+'), '-')
+        .replaceAll(RegExp(r'^-|-$'), '');
+
+    if (slug.isEmpty) {
+      return 'untitled-book';
+    }
+
+    return slug;
+  }
+}
+```
+
+---
+
+## 6. Add Welcome page like Vellum
+
+Create:
+
+```txt
+apps/publisher_app/lib/features/welcome/presentation/welcome_page.dart
+```
+
+```dart
+import 'dart:io';
+
+import 'package:auto_route/auto_route.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:publisher_app/app/router/app_router.gr.dart';
+import 'package:publisher_app/features/editor/application/book_editor_cubit.dart';
+import 'package:publisher_app/features/editor/application/book_editor_state.dart';
+
+@RoutePage()
+class WelcomePage extends StatelessWidget {
+  const WelcomePage({super.key});
+
+  Future<void> _createNewBook(BuildContext context) async {
+    final directoryPath = await FilePicker.platform.getDirectoryPath();
+
+    if (directoryPath == null || !context.mounted) {
+      return;
+    }
+
+    final result = await showDialog<_NewBookResult>(
+      context: context,
+      builder: (_) => const _NewBookDialog(),
+    );
+
+    if (result == null || !context.mounted) {
+      return;
+    }
+
+    await context.read<BookEditorCubit>().createMarkBook(
+          parentDirectoryPath: directoryPath,
+          title: result.title,
+          author: result.author,
+        );
+
+    if (!context.mounted) {
+      return;
+    }
+
+    await context.router.push(const EditorRoute());
+  }
+
+  Future<void> _openOther(BuildContext context) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['markbook'],
+      allowMultiple: false,
+    );
+
+    final path = result?.files.single.path;
+
+    if (path == null || !context.mounted) {
+      return;
+    }
+
+    await context.read<BookEditorCubit>().openMarkBook(path);
+
+    if (!context.mounted) {
+      return;
+    }
+
+    await context.router.push(const EditorRoute());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<BookEditorCubit, BookEditorState>(
+      listener: (context, state) {
+        final error = state.errorMessage;
+
+        if (error == null) {
+          return;
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error)),
+        );
+      },
+      builder: (context, state) {
+        final isBusy = state.status == BookEditorStatus.loading;
+
+        return Scaffold(
+          backgroundColor: const Color(0xFF1F1F22),
+          body: Center(
+            child: Container(
+              width: 1180,
+              height: 700,
+              decoration: BoxDecoration(
+                color: const Color(0xFF202023),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: const Color(0xFF4A4A4F)),
+                boxShadow: const [
+                  BoxShadow(
+                    blurRadius: 40,
+                    offset: Offset(0, 24),
+                    color: Color(0x66000000),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _WelcomeBrandPanel(
+                        isBusy: isBusy,
+                        onNewBook: () => _createNewBook(context),
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      color: const Color(0xFF171719),
+                    ),
+                    Expanded(
+                      child: _RecentFilesPanel(
+                        isBusy: isBusy,
+                        recentFiles: state.recentFiles,
+                        onOpenOther: () => _openOther(context),
+                        onOpenRecent: (filePath) async {
+                          await context
+                              .read<BookEditorCubit>()
+                              .openMarkBook(filePath);
+
+                          if (!context.mounted) {
+                            return;
+                          }
+
+                          await context.router.push(const EditorRoute());
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _WelcomeBrandPanel extends StatelessWidget {
+  const _WelcomeBrandPanel({
+    required this.isBusy,
+    required this.onNewBook,
+  });
+
+  final bool isBusy;
+  final VoidCallback onNewBook;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFF252528),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(70, 44, 70, 36),
+        child: Column(
+          children: [
+            const _MacWindowDots(),
+            const Spacer(),
+            const _MarkBookFlower(),
+            const SizedBox(height: 36),
+            const Text(
+              'WORD CRAFT',
+              style: TextStyle(
+                color: Color(0xFFD8D8DD),
+                fontSize: 54,
+                letterSpacing: 3,
+                fontWeight: FontWeight.w300,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Version 0.1.0',
+              style: TextStyle(
+                color: Color(0xFF9E9EA4),
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Spacer(),
+            const Divider(color: Color(0xFF4A4A4F)),
+            const SizedBox(height: 30),
+            const _HelpLink(
+              icon: Icons.local_florist_outlined,
+              label: 'Show Word Craft Tutorial',
+            ),
+            const SizedBox(height: 18),
+            const _HelpLink(
+              icon: Icons.help_outline,
+              label: 'Open Help Overview',
+            ),
+            const SizedBox(height: 38),
+            const Divider(color: Color(0xFF4A4A4F)),
+            const SizedBox(height: 32),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                FilledButton(
+                  onPressed: isBusy ? null : onNewBook,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF3D3D43),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 28,
+                      vertical: 14,
+                    ),
+                  ),
+                  child: const Text(
+                    'New Book',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                FilledButton(
+                  onPressed: isBusy ? null : () {},
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF3D3D43),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 28,
+                      vertical: 14,
+                    ),
+                  ),
+                  child: const Text(
+                    'Import Word File...',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RecentFilesPanel extends StatelessWidget {
+  const _RecentFilesPanel({
+    required this.isBusy,
+    required this.recentFiles,
+    required this.onOpenOther,
+    required this.onOpenRecent,
+  });
+
+  final bool isBusy;
+  final List<RecentMarkBook> recentFiles;
+  final VoidCallback onOpenOther;
+  final ValueChanged<String> onOpenRecent;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFF20201F),
+      padding: const EdgeInsets.fromLTRB(32, 36, 32, 28),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Recent Files',
+            style: TextStyle(
+              color: Color(0xFFA7A7AC),
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 28),
+          Expanded(
+            child: recentFiles.isEmpty
+                ? const _EmptyRecentFiles()
+                : ListView.separated(
+                    itemCount: recentFiles.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 18),
+                    itemBuilder: (context, index) {
+                      final recentFile = recentFiles[index];
+
+                      return _RecentFileTile(
+                        recentFile: recentFile,
+                        onTap: isBusy
+                            ? null
+                            : () => onOpenRecent(recentFile.filePath),
+                      );
+                    },
+                  ),
+          ),
+          const Divider(color: Color(0xFF4A4A4F)),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              FilledButton(
+                onPressed: isBusy ? null : onOpenOther,
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF3D3D43),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 13,
+                  ),
+                ),
+                child: const Text(
+                  'Open Other...',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+              const SizedBox(width: 16),
+              FilledButton(
+                onPressed: null,
+                style: FilledButton.styleFrom(
+                  disabledBackgroundColor: const Color(0xFF333337),
+                  disabledForegroundColor: const Color(0xFF6B6B70),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 13,
+                  ),
+                ),
+                child: const Text(
+                  'Open Selected',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
-
-  pw.Widget _toc(BookProject project) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Text(
-          'Table of Contents',
-          style: pw.TextStyle(
-            fontSize: 24,
-            fontWeight: pw.FontWeight.bold,
-          ),
-        ),
-        pw.SizedBox(height: 16),
-        for (final chapter in project.chapters)
-          pw.Padding(
-            padding: const pw.EdgeInsets.only(bottom: 8),
-            child: pw.Text(chapter.title),
-          ),
-      ],
-    );
-  }
-
-  List<pw.Widget> _markdownToPdf(
-    String markdown,
-    BookThemeConfig theme,
-  ) {
-    final document = md.Document();
-    final nodes = document.parseLines(markdown.split('\n'));
-    final widgets = <pw.Widget>[];
-
-    for (final node in nodes) {
-      if (node is md.Element) {
-        widgets.add(_elementToWidget(node, theme));
-      } else if (node is md.Text) {
-        widgets.add(_paragraph(node.text, theme));
-      }
-    }
-
-    return widgets;
-  }
-
-  pw.Widget _elementToWidget(
-    md.Element element,
-    BookThemeConfig theme,
-  ) {
-    final text = element.textContent.trim();
-
-    return switch (element.tag) {
-      'h1' => _heading(text, 26),
-      'h2' => _heading(text, 22),
-      'h3' => _heading(text, 18),
-      'blockquote' => _blockquote(text, theme),
-      'pre' => _codeBlock(text),
-      'ul' => _unorderedList(element),
-      'ol' => _orderedList(element),
-      _ => _paragraph(text, theme),
-    };
-  }
-
-  pw.Widget _heading(String text, double fontSize) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.only(top: 18, bottom: 10),
-      child: pw.Text(
-        text,
-        style: pw.TextStyle(
-          fontSize: fontSize,
-          fontWeight: pw.FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  pw.Widget _paragraph(String text, BookThemeConfig theme) {
-    if (text.isEmpty) {
-      return pw.SizedBox.shrink();
-    }
-
-    return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 10),
-      child: pw.Text(
-        text,
-        style: pw.TextStyle(
-          fontSize: theme.fontSize,
-          lineSpacing: theme.fontSize * (theme.lineHeight - 1),
-        ),
-      ),
-    );
-  }
-
-  pw.Widget _blockquote(String text, BookThemeConfig theme) {
-    return pw.Container(
-      margin: const pw.EdgeInsets.only(bottom: 12),
-      padding: const pw.EdgeInsets.only(left: 12, top: 8, bottom: 8),
-      decoration: const pw.BoxDecoration(
-        border: pw.Border(
-          left: pw.BorderSide(width: 3),
-        ),
-      ),
-      child: pw.Text(
-        text,
-        style: pw.TextStyle(
-          fontSize: theme.fontSize,
-          fontStyle: pw.FontStyle.italic,
-        ),
-      ),
-    );
-  }
-
-  pw.Widget _codeBlock(String text) {
-    return pw.Container(
-      width: double.infinity,
-      margin: const pw.EdgeInsets.only(bottom: 12),
-      padding: const pw.EdgeInsets.all(12),
-      decoration: const pw.BoxDecoration(
-        color: PdfColors.grey200,
-      ),
-      child: pw.Text(
-        text,
-        style: const pw.TextStyle(
-          font: pw.Font.courier(),
-          fontSize: 10,
-        ),
-      ),
-    );
-  }
-
-  pw.Widget _unorderedList(md.Element element) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        for (final child in element.children ?? <md.Node>[])
-          pw.Padding(
-            padding: const pw.EdgeInsets.only(bottom: 6),
-            child: pw.Text('• ${child.textContent}'),
-          ),
-      ],
-    );
-  }
-
-  pw.Widget _orderedList(md.Element element) {
-    final children = element.children ?? <md.Node>[];
-
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        for (var index = 0; index < children.length; index++)
-          pw.Padding(
-            padding: const pw.EdgeInsets.only(bottom: 6),
-            child: pw.Text('${index + 1}. ${children[index].textContent}'),
-          ),
-      ],
-    );
-  }
 }
-```
 
----
+class _RecentFileTile extends StatelessWidget {
+  const _RecentFileTile({
+    required this.recentFile,
+    required this.onTap,
+  });
 
-# Step 5: make the first Flutter screen
-
-In the app, your first real feature should be:
-
-```txt
-features/editor/
-  application/
-    book_editor_cubit.dart
-    book_editor_state.dart
-  presentation/
-    editor_page.dart
-```
-
-For now, keep it simple. The screen should:
-
-1. Create sample project.
-2. Load project.
-3. Show chapter list.
-4. Edit selected chapter.
-5. Show live Markdown preview.
-6. Save chapter.
-7. Preview PDF.
-
-Do **not** add theme editor yet. Do **not** add EPUB yet.
-
----
-
-# Step 6: add local package imports to app screen
-
-Example minimal editor logic:
-
-```dart
-import 'dart:io';
-
-import 'package:book_core/book_core.dart';
-import 'package:book_exporters/book_exporters.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
-import 'package:printing/printing.dart';
-
-class EditorPage extends StatefulWidget {
-  const EditorPage({super.key});
+  final RecentMarkBook recentFile;
+  final VoidCallback? onTap;
 
   @override
-  State<EditorPage> createState() => _EditorPageState();
+  Widget build(BuildContext context) {
+    final coverPath = recentFile.coverImagePath;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Row(
+          children: [
+            Container(
+              width: 76,
+              height: 108,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8DCC7),
+                borderRadius: BorderRadius.circular(3),
+                border: Border.all(color: const Color(0xFF48484D)),
+                image: coverPath != null && File(coverPath).existsSync()
+                    ? DecorationImage(
+                        image: FileImage(File(coverPath)),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+              child: coverPath == null
+                  ? const Icon(
+                      Icons.menu_book_rounded,
+                      color: Color(0xFF3C3C42),
+                      size: 36,
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 18),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    recentFile.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFFE5E5EA),
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.folder_outlined,
+                        color: Color(0xFFA7A7AC),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          recentFile.directoryPath,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFFA7A7AC),
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    recentFile.filePath.split(Platform.pathSeparator).last,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFFA7A7AC),
+                      fontSize: 17,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-class _EditorPageState extends State<EditorPage> {
-  final controller = TextEditingController();
+class _EmptyRecentFiles extends StatelessWidget {
+  const _EmptyRecentFiles();
 
-  BookProject? project;
-  BookChapter? selectedChapter;
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text(
+        'No recent books yet.\nCreate a new .markbook or open an existing one.',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: Color(0xFF8D8D93),
+          fontSize: 18,
+          height: 1.4,
+        ),
+      ),
+    );
+  }
+}
 
-  final creator = BookProjectCreator();
-  final loader = BookProjectLoader();
-  final writer = BookProjectWriter();
-  final exporter = PdfBookExporter();
+class _HelpLink extends StatelessWidget {
+  const _HelpLink({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: const Color(0xFFCFA1D7), size: 28),
+        const SizedBox(width: 12),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFFCFA1D7),
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            decoration: TextDecoration.underline,
+            decorationColor: Color(0xFFCFA1D7),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MacWindowDots extends StatelessWidget {
+  const _MacWindowDots();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Align(
+      alignment: Alignment.centerLeft,
+      child: Row(
+        children: [
+          _WindowDot(),
+          SizedBox(width: 14),
+          _WindowDot(),
+          SizedBox(width: 14),
+          _WindowDot(),
+        ],
+      ),
+    );
+  }
+}
+
+class _WindowDot extends StatelessWidget {
+  const _WindowDot();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: const Color(0xFF5A5A60),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: const SizedBox(width: 24, height: 24),
+    );
+  }
+}
+
+class _MarkBookFlower extends StatelessWidget {
+  const _MarkBookFlower();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 245,
+      height: 245,
+      child: CustomPaint(
+        painter: _FlowerPainter(),
+      ),
+    );
+  }
+}
+
+class _FlowerPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final petalPaint = Paint()
+      ..shader = const LinearGradient(
+        colors: [
+          Color(0xFFFFFFFF),
+          Color(0xFFD7D1D3),
+        ],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+      ).createShader(Offset.zero & size);
+
+    final accentPaint = Paint()
+      ..color = const Color(0xFFC638D5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round;
+
+    for (var i = 0; i < 5; i++) {
+      canvas.save();
+      canvas.translate(center.dx, center.dy);
+      canvas.rotate(i * 1.2566370614);
+      final path = Path()
+        ..moveTo(0, -8)
+        ..cubicTo(62, -92, 38, -138, 0, -156)
+        ..cubicTo(-38, -138, -62, -92, 0, -8)
+        ..close();
+
+      canvas.drawPath(path, petalPaint);
+      canvas.restore();
+    }
+
+    for (var i = 0; i < 10; i++) {
+      canvas.save();
+      canvas.translate(center.dx, center.dy);
+      canvas.rotate(i * 0.6283185307);
+      canvas.drawLine(const Offset(0, 0), const Offset(0, -92), accentPaint);
+      canvas.restore();
+    }
+
+    canvas.drawCircle(
+      center,
+      7,
+      Paint()..color = const Color(0xFFC638D5),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _NewBookDialog extends StatefulWidget {
+  const _NewBookDialog();
+
+  @override
+  State<_NewBookDialog> createState() => _NewBookDialogState();
+}
+
+class _NewBookDialogState extends State<_NewBookDialog> {
+  final titleController = TextEditingController(text: 'My Book');
+  final authorController = TextEditingController(text: 'Mostafa Khazaal');
 
   @override
   void dispose() {
-    controller.dispose();
+    titleController.dispose();
+    authorController.dispose();
     super.dispose();
   }
 
-  Future<void> createAndLoadSampleProject() async {
-    final rootPath = '${Directory.current.path}/sample_book';
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('New MarkBook'),
+      content: SizedBox(
+        width: 420,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(
+                labelText: 'Book title',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: authorController,
+              decoration: const InputDecoration(
+                labelText: 'Author',
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: Navigator.of(context).pop,
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            final title = titleController.text.trim();
+            final author = authorController.text.trim();
 
-    await creator.create(
-      rootPath: rootPath,
-      title: 'My First Book',
-      author: 'Mostafa Khazaal',
+            if (title.isEmpty || author.isEmpty) {
+              return;
+            }
+
+            Navigator.of(context).pop(
+              _NewBookResult(
+                title: title,
+                author: author,
+              ),
+            );
+          },
+          child: const Text('Create'),
+        ),
+      ],
     );
-
-    final loadedProject = await loader.load(rootPath);
-    final firstChapter = loadedProject.chapters.first;
-
-    setState(() {
-      project = loadedProject;
-      selectedChapter = firstChapter;
-      controller.text = firstChapter.markdown;
-    });
   }
+}
 
-  Future<void> saveChapter() async {
-    final currentProject = project;
-    final chapter = selectedChapter;
+class _NewBookResult {
+  const _NewBookResult({
+    required this.title,
+    required this.author,
+  });
 
-    if (currentProject == null || chapter == null) {
-      return;
-    }
+  final String title;
+  final String author;
+}
+```
 
-    await writer.saveChapter(
-      rootPath: currentProject.rootPath,
-      chapterPath: chapter.path,
-      markdown: controller.text,
-    );
+---
 
-    final reloadedProject = await loader.load(currentProject.rootPath);
+## 7. Update Editor page to use Cubit
 
-    setState(() {
-      project = reloadedProject;
-      selectedChapter = reloadedProject.chapters.firstWhere(
-        (item) => item.path == chapter.path,
-      );
-    });
-  }
+Replace your current:
 
-  Future<void> previewPdf() async {
-    final currentProject = project;
+```txt
+apps/publisher_app/lib/features/editor/presentation/editor_page.dart
+```
 
-    if (currentProject == null) {
-      return;
-    }
+with:
 
-    await saveChapter();
+```dart
+import 'package:auto_route/auto_route.dart';
+import 'package:book_core/book_core.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:printing/printing.dart';
+import 'package:publisher_app/features/editor/application/book_editor_cubit.dart';
+import 'package:publisher_app/features/editor/application/book_editor_state.dart';
 
-    final reloadedProject = await loader.load(currentProject.rootPath);
-    final bytes = await exporter.export(reloadedProject);
+@RoutePage()
+class EditorPage extends StatelessWidget {
+  const EditorPage({super.key});
 
-    if (!mounted) {
+  Future<void> _previewPdf(BuildContext context) async {
+    final bytes = await context.read<BookEditorCubit>().buildPdfPreview();
+
+    if (bytes == null || !context.mounted) {
       return;
     }
 
@@ -959,6 +1259,10 @@ class _EditorPageState extends State<EditorPage> {
             ),
             body: PdfPreview(
               build: (_) async => bytes,
+              canChangeOrientation: false,
+              canChangePageFormat: true,
+              allowPrinting: true,
+              allowSharing: true,
             ),
           );
         },
@@ -968,74 +1272,198 @@ class _EditorPageState extends State<EditorPage> {
 
   @override
   Widget build(BuildContext context) {
-    final currentProject = project;
+    return BlocConsumer<BookEditorCubit, BookEditorState>(
+      listener: (context, state) {
+        final error = state.errorMessage;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Markdown Book Publisher'),
-        actions: [
-          TextButton(
-            onPressed: createAndLoadSampleProject,
-            child: const Text('Create Sample'),
-          ),
-          TextButton(
-            onPressed: saveChapter,
-            child: const Text('Save'),
-          ),
-          TextButton(
-            onPressed: previewPdf,
-            child: const Text('Preview PDF'),
-          ),
-        ],
-      ),
-      body: currentProject == null
-          ? const Center(
-              child: Text('Create a sample book project to start.'),
-            )
-          : Row(
-              children: [
-                SizedBox(
-                  width: 240,
-                  child: ListView(
-                    children: [
-                      for (final chapter in currentProject.chapters)
-                        ListTile(
-                          title: Text(chapter.title),
-                          selected: chapter.path == selectedChapter?.path,
-                          onTap: () {
-                            setState(() {
-                              selectedChapter = chapter;
-                              controller.text = chapter.markdown;
-                            });
-                          },
-                        ),
-                    ],
-                  ),
-                ),
-                const VerticalDivider(width: 1),
-                Expanded(
-                  child: TextField(
-                    controller: controller,
-                    expands: true,
-                    maxLines: null,
-                    minLines: null,
-                    textAlignVertical: TextAlignVertical.top,
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.all(24),
-                    ),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                ),
-                const VerticalDivider(width: 1),
-                Expanded(
-                  child: Markdown(
-                    data: controller.text,
-                    padding: const EdgeInsets.all(24),
-                  ),
-                ),
-              ],
+        if (error == null) {
+          return;
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error)),
+        );
+      },
+      builder: (context, state) {
+        final project = state.project;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(project?.config.title ?? 'Word Craft'),
+            leading: IconButton(
+              onPressed: () => context.router.maybePop(),
+              icon: const Icon(Icons.arrow_back),
             ),
+            actions: [
+              TextButton.icon(
+                onPressed: state.canSave
+                    ? () => context.read<BookEditorCubit>().saveMarkBook()
+                    : null,
+                icon: const Icon(Icons.save_outlined),
+                label: const Text('Save'),
+              ),
+              TextButton.icon(
+                onPressed: project == null ? null : () => _previewPdf(context),
+                icon: const Icon(Icons.picture_as_pdf_outlined),
+                label: const Text('Preview PDF'),
+              ),
+              const SizedBox(width: 12),
+            ],
+          ),
+          body: project == null
+              ? const Center(
+                  child: Text('Open or create a .markbook first.'),
+                )
+              : _EditorLayout(
+                  project: project,
+                  state: state,
+                ),
+        );
+      },
+    );
+  }
+}
+
+class _EditorLayout extends StatelessWidget {
+  const _EditorLayout({
+    required this.project,
+    required this.state,
+  });
+
+  final BookProject project;
+  final BookEditorState state;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _ChapterSidebar(
+          chapters: project.chapters,
+          selectedChapter: state.selectedChapter,
+        ),
+        const VerticalDivider(width: 1),
+        const Expanded(
+          child: _MarkdownEditorPane(),
+        ),
+        const VerticalDivider(width: 1),
+        const Expanded(
+          child: _MarkdownPreviewPane(),
+        ),
+      ],
+    );
+  }
+}
+
+class _ChapterSidebar extends StatelessWidget {
+  const _ChapterSidebar({
+    required this.chapters,
+    required this.selectedChapter,
+  });
+
+  final List<BookChapter> chapters;
+  final BookChapter? selectedChapter;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 280,
+      child: Material(
+        color: Theme.of(context).colorScheme.surface,
+        child: ListView(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Text(
+                'Chapters',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            for (final chapter in chapters)
+              ListTile(
+                title: Text(chapter.title),
+                subtitle: Text(chapter.path),
+                selected: chapter.path == selectedChapter?.path,
+                onTap: () {
+                  context.read<BookEditorCubit>().selectChapter(chapter);
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MarkdownEditorPane extends StatefulWidget {
+  const _MarkdownEditorPane();
+
+  @override
+  State<_MarkdownEditorPane> createState() => _MarkdownEditorPaneState();
+}
+
+class _MarkdownEditorPaneState extends State<_MarkdownEditorPane> {
+  final controller = TextEditingController();
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<BookEditorCubit, BookEditorState>(
+      listenWhen: (previous, current) {
+        return previous.selectedChapter?.path != current.selectedChapter?.path ||
+            previous.markdownDraft != current.markdownDraft;
+      },
+      listener: (context, state) {
+        if (controller.text == state.markdownDraft) {
+          return;
+        }
+
+        controller.value = TextEditingValue(
+          text: state.markdownDraft,
+          selection: TextSelection.collapsed(
+            offset: state.markdownDraft.length,
+          ),
+        );
+      },
+      child: TextField(
+        controller: controller,
+        expands: true,
+        maxLines: null,
+        minLines: null,
+        textAlignVertical: TextAlignVertical.top,
+        style: const TextStyle(
+          fontFamily: 'monospace',
+          fontSize: 14,
+          height: 1.55,
+        ),
+        decoration: const InputDecoration(
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.all(24),
+          hintText: 'Write Markdown...',
+        ),
+        onChanged: context.read<BookEditorCubit>().updateMarkdownDraft,
+      ),
+    );
+  }
+}
+
+class _MarkdownPreviewPane extends StatelessWidget {
+  const _MarkdownPreviewPane();
+
+  @override
+  Widget build(BuildContext context) {
+    final markdown = context.select(
+      (BookEditorCubit cubit) => cubit.state.markdownDraft,
+    );
+
+    return Markdown(
+      data: markdown,
+      padding: const EdgeInsets.all(32),
     );
   }
 }
@@ -1043,66 +1471,100 @@ class _EditorPageState extends State<EditorPage> {
 
 ---
 
-# Step 7: run it
+## 8. Provide Cubit above router
 
-From the Flutter app:
+Update `App` again so the Cubit is available to both `WelcomePage` and `EditorPage`:
 
-```bash
-cd apps/publisher_app
-flutter pub get
-flutter run -d macos
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:publisher_app/app/router/app_router.dart';
+import 'package:publisher_app/features/editor/application/book_editor_cubit.dart';
+
+class App extends StatefulWidget {
+  const App({super.key});
+
+  @override
+  State<App> createState() => _AppState();
+}
+
+class _AppState extends State<App> {
+  final AppRouter _appRouter = AppRouter();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => BookEditorCubit(),
+      child: MaterialApp.router(
+        title: 'Word Craft',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          useMaterial3: true,
+          brightness: Brightness.dark,
+          colorSchemeSeed: const Color(0xFFC77DFF),
+          fontFamily: '.SF Pro Display',
+        ),
+        routerConfig: _appRouter.config(),
+      ),
+    );
+  }
+}
 ```
-
-Or:
-
-```bash
-flutter run -d windows
-```
-
-Or:
-
-```bash
-flutter run -d linux
-```
-
-Desktop first is best for this product.
 
 ---
 
-# Step 8: next milestones
+## 9. Generate and run
 
-After the first screen works, continue in this order:
+```bash
+cd apps/publisher_app
 
-```txt
-1. Create sample book project
-2. Load existing book project folder
-3. Save selected markdown chapter
-4. Live preview selected chapter
-5. Preview generated PDF
-6. Export PDF into output/
-7. Add chapter
-8. Rename/reorder chapters
-9. Edit book.config.json visually
-10. Add theme editor
-11. Add HTML exporter
-12. Add EPUB exporter
-13. Add CLI app
+dart run build_runner build --delete-conflicting-outputs
+flutter analyze
+flutter run --flavor development -t lib/main_development.dart -d macos
 ```
 
-Your immediate next task is:
+---
+
+## Important structure now
+
+Your app should become:
 
 ```txt
-Implement book_core first.
-Then implement PDF exporter.
-Then connect one simple Flutter editor page.
+apps/publisher_app/lib/
+  app/
+    router/
+      app_router.dart
+      app_router.gr.dart
+    view/
+      app.dart
+
+  features/
+    welcome/
+      presentation/
+        welcome_page.dart
+
+    editor/
+      application/
+        book_editor_cubit.dart
+        book_editor_state.dart
+      presentation/
+        editor_page.dart
 ```
 
-Do not start with EPUB. Do not start with advanced UI. Get this loop working first:
+No use cases yet. For now:
 
 ```txt
-Create project → edit markdown → live preview → save → preview PDF
+UI → Cubit → book_core services / book_exporters
 ```
 
-[1]: https://cli.vgv.dev/docs/templates/core "Flutter Starter App (Core)  | Very Good CLI"
-[2]: https://pub.dev/packages/pdf "pdf | Dart package"
-[3]: https://pub.dev/packages/printing "printing | Flutter package"
+Later, when the app grows:
+
+```txt
+UI → Cubit → Repository → Services
+```
+
+But today, Cubit + services is enough.
+
+[1]: https://pub.dev/packages/auto_route "auto_route | Flutter package"
+[2]: https://pub.dev/packages/flutter_bloc "flutter_bloc | Flutter package"
+[3]: https://pub.dev/packages/file_picker "file_picker | Flutter package"

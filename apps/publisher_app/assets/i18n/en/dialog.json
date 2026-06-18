@@ -1,0 +1,8 @@
+{
+  "newMarkBook": {
+    "title": "New MarkBook",
+    "bookTitle": "Book title",
+    "author": "Author",
+    "defaultBookTitle": "My Book"
+  }
+}

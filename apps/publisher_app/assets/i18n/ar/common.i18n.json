@@ -1,0 +1,14 @@
+{
+  "cancel": "إلغاء",
+  "create": "إنشاء",
+  "open": "فتح",
+  "save": "حفظ",
+  "close": "إغلاق",
+  "delete": "حذف",
+  "rename": "إعادة تسمية",
+  "duplicate": "نسخ",
+  "settings": "الإعدادات",
+  "settingsWithEllipsis": "الإعدادات…",
+  "noDocument": "لا يوجد مستند",
+  "notAvailable": "غير متاح"
+}

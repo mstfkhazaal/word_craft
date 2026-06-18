@@ -24,6 +24,12 @@
       <excludeFolder url="file://$MODULE_DIR$/apps/publisher_app/windows/flutter/ephemeral/.plugin_symlinks/printing/example/.dart_tool" />
       <excludeFolder url="file://$MODULE_DIR$/apps/publisher_app/windows/flutter/ephemeral/.plugin_symlinks/printing/example/.pub" />
       <excludeFolder url="file://$MODULE_DIR$/apps/publisher_app/windows/flutter/ephemeral/.plugin_symlinks/printing/example/build" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/publisher_app_ui/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/publisher_app_ui/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/publisher_app_ui/build" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/publisher_app_ui/widgetbook/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/publisher_app_ui/widgetbook/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/publisher_app_ui/widgetbook/build" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
